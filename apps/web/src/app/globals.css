@@ -1,0 +1,195 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-bg-page text-text-1;
+    transition: background-color 0.2s, color 0.2s;
+  }
+
+  :root {
+    /* Backgrounds */
+    --color-bg-page:    #F0F4FA;
+    --color-bg-surface: #FFFFFF;
+    --color-bg-subtle:  #EEF1F7;
+    --color-bg-muted:   #E4E9F2;
+    --color-sidebar:    #E8EDF5;
+    --color-sidebar-hover:  #DDE3EF;
+    --color-sidebar-border: #D0D8EC;
+
+    /* Azul — acento principal */
+    --color-blue:        #1249A0;
+    --color-blue-bright: #4A9EFF;
+    --color-blue-dim:    rgba(18, 73, 160, 0.07);
+    --color-blue-dim2:   rgba(18, 73, 160, 0.04);
+    --color-blue-border: rgba(18, 73, 160, 0.15);
+    --color-blue-glow:   rgba(18, 73, 160, 0.12);
+
+    /* Verde — IA e sucesso */
+    --color-green:        #0D9B6A;
+    --color-green-dim:    rgba(13, 155, 106, 0.09);
+    --color-green-border: rgba(13, 155, 106, 0.22);
+
+    /* Âmbar — alertas */
+    --color-amber:     #B06A00;
+    --color-amber-dim: rgba(176, 106, 0, 0.08);
+
+    /* Texto */
+    --color-text-1: #0F1923;
+    --color-text-2: #4A5568;
+    --color-text-3: #8A96A8;
+
+    /* Bordas */
+    --color-border:     #DDE3EE;
+    --color-border-mid: #C8D0E0;
+
+    /* Especiais */
+    --color-navy:  #0B1628;
+    --color-slate: #6B8BAF;
+
+    /* Semânticos — sobrescritos no dark */
+    --color-ai-card-bg:      #F0F6FF;
+    --color-danger-dim:      #fef2f2;
+    --color-danger-border:   #fca5a5;
+
+    /* Input field */
+    --color-input-bg:           var(--color-bg-subtle);
+    --color-input-bg-focus:     var(--color-bg-surface);
+    --color-input-border:       var(--color-border);
+    --color-input-border-focus: var(--color-blue-border);
+
+    /* Toolbar — botão neutro (Decisão, Votação) */
+    --color-btn-neutral-bg:     transparent;
+    --color-btn-neutral-border: var(--color-border);
+    --color-btn-neutral-color:  var(--color-text-2);
+
+    /* Pill de contexto */
+    --color-pill-text:   var(--color-blue-bright);
+    --color-pill-border: var(--color-blue-border);
+  }
+
+  [data-theme="dark"] {
+    /* Backgrounds */
+    --color-bg-page:    #1A1A1A;
+    --color-bg-surface: #242424;
+    --color-bg-subtle:  #2E2E2E;
+    --color-bg-muted:   #383838;
+
+    /* Sidebar */
+    --color-sidebar:        #141414;
+    --color-sidebar-hover:  #2A2A2A;
+    --color-sidebar-border: rgba(255,255,255,.08);
+
+    /* Bordas */
+    --color-border:     rgba(255,255,255,.10);
+    --color-border-mid: rgba(255,255,255,.18);
+
+    /* Texto */
+    --color-text-1: #F5F5F5;
+    --color-text-2: #A0A0A0;
+    --color-text-3: #606060;
+
+    /* Especiais */
+    --color-navy:  #0D0D0D;
+    --color-slate: #888888;
+
+    /* Azul — bright no dark para contraste */
+    --color-blue:        #4A9EFF;
+    --color-blue-bright: #4A9EFF;
+    --color-blue-dim:    rgba(74,158,255,.12);
+    --color-blue-dim2:   rgba(74,158,255,.07);
+    --color-blue-border: rgba(74,158,255,.50);
+    --color-blue-glow:   rgba(74,158,255,.12);
+
+    /* Verde */
+    --color-green:        #22C98A;
+    --color-green-dim:    rgba(34,201,138,.12);
+    --color-green-border: rgba(34,201,138,.50);
+
+    /* Âmbar */
+    --color-amber:     #F59E0B;
+    --color-amber-dim: rgba(245,158,11,.15);
+
+    /* Semânticos */
+    --color-ai-card-bg:    #242424;
+    --color-danger-dim:    #2A1010;
+    --color-danger-border: rgba(255,100,100,.40);
+
+    /* Input field */
+    --color-input-bg:           #2E2E2E;
+    --color-input-bg-focus:     #383838;
+    --color-input-border:       rgba(255,255,255,.20);
+    --color-input-border-focus: #4A9EFF;
+
+    /* Toolbar — botão neutro dark */
+    --color-btn-neutral-bg:     transparent;
+    --color-btn-neutral-border: rgba(255,255,255,.20);
+    --color-btn-neutral-color:  #A0A0A0;
+
+    /* Pill de contexto dark */
+    --color-pill-text:   #A0A0A0;
+    --color-pill-border: rgba(255,255,255,.20);
+  }
+}
+
+/* ── Input area always renders in light palette ──────────────────────────────
+   Applied to the InputArea container regardless of [data-theme].
+   CSS variable scope: children of .input-area-light inherit light values.     */
+.input-area-light {
+  --color-bg-surface:         #FFFFFF;
+  --color-bg-subtle:          #F0F4FA;
+  --color-border:             #DDE3EE;
+  --color-border-mid:         #C8D0E0;
+  --color-text-1:             #0F1923;
+  --color-text-2:             #4A5568;
+  --color-text-3:             #8A96A8;
+  --color-blue:               #1249A0;
+  --color-blue-bright:        #1249A0;
+  --color-blue-dim:           rgba(18,73,160,.07);
+  --color-blue-dim2:          rgba(18,73,160,.04);
+  --color-blue-border:        rgba(18,73,160,.18);
+  --color-blue-glow:          rgba(18,73,160,.10);
+  --color-green:              #0D9B6A;
+  --color-green-dim:          rgba(13,155,106,.08);
+  --color-green-border:       rgba(13,155,106,.22);
+  --color-input-bg:           #F0F4FA;
+  --color-input-bg-focus:     #FFFFFF;
+  --color-input-border:       #DDE3EE;
+  --color-input-border-focus: #1249A0;
+  --color-btn-neutral-bg:     transparent;
+  --color-btn-neutral-border: #DDE3EE;
+  --color-btn-neutral-color:  #4A5568;
+}
+
+/* ── Sidebar dark mode contrast ──────────────────────────────────────────────
+   Scoped to the sidebar nav so other components are unaffected.
+   text-text-2 and text-text-3 resolve to higher-contrast values here only. */
+[data-theme="dark"] nav[aria-label="Navegação principal"] {
+  --color-text-2: #C8D8E8;   /* menu items + community names: was #A0A0A0 */
+  --color-text-3: #4A6A8A;   /* section labels MENU/COMUNIDADES: was #606060 */
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-mid) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--color-border-mid);
+    border-radius: 2px;
+  }
+}

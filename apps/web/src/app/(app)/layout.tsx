@@ -1,0 +1,36 @@
+import { auth } from "@clerk/nextjs/server";
+import { Sidebar } from "@/components/layout/Sidebar";
+import type { CommunityWithMeta } from "@/components/layout/Sidebar";
+
+export const dynamic = "force-dynamic";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+
+async function fetchCommunities(): Promise<CommunityWithMeta[]> {
+  try {
+    const { getToken } = await auth();
+    const token = await getToken();
+    if (!token) return [];
+
+    const res = await fetch(`${API_URL}/api/communities`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const data = await res.json() as CommunityWithMeta[];
+    return data.map((c) => ({ ...c, hasUnread: false }));
+  } catch {
+    return [];
+  }
+}
+
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const communities = await fetchCommunities();
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-bg-page">
+      <Sidebar communities={communities} isOpen={true} />
+      <main className="flex-1 overflow-hidden">{children}</main>
+    </div>
+  );
+}

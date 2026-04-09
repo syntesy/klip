@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --headless=new --disable-gpu --virtual-time-budget=5000 --dump-dom http://localhost:3002/message-preview)"
+    ]
+  }
+}
