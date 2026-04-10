@@ -14,9 +14,11 @@ RUN pnpm install --frozen-lockfile
 COPY apps/api ./apps/api
 COPY packages/db ./packages/db
 
+# Build: tsup bundles everything (incl. @klip/db) into dist/index.js
+RUN pnpm --filter @klip/api build
+
 ENV NODE_ENV=production
 
 EXPOSE 3001
 
-WORKDIR /app/apps/api
-CMD ["node_modules/.bin/tsx", "src/index.ts"]
+CMD ["node", "apps/api/dist/index.js"]
