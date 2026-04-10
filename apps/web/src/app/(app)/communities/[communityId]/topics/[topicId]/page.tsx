@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
+import { DeleteTopicButton } from "@/components/communities/DeleteTopicButton";
 import { TopicPageClient } from "@/components/chat/TopicPageClient";
 import type { TopicItem } from "@/components/chat/TopicList";
 import type { Message } from "@/components/chat/MessageFeed";
@@ -7,7 +8,7 @@ import type { TopicMeta } from "@/components/chat/TopicHeader";
 import type { TopicSummary } from "@/hooks/useTopicSocket";
 
 interface Props {
-  params: { communityId: string; topicId: string };
+  params: Promise<{ communityId: string; topicId: string }>;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
@@ -22,7 +23,7 @@ async function apiFetch(path: string, token: string) {
 }
 
 export default async function TopicPage({ params }: Props) {
-  const { communityId, topicId } = params;
+  const { communityId, topicId } = await params;
 
   const { getToken } = await auth();
   const token = await getToken();
@@ -89,14 +90,21 @@ export default async function TopicPage({ params }: Props) {
   const canExtrair = userRole === "owner" || userRole === "moderator";
 
   return (
-    <TopicPageClient
-      communityId={communityId}
-      topicId={topicId}
-      topic={topic}
-      initialTopics={topics}
-      initialMessages={messages}
-      initialSummary={summary}
-      canExtrair={canExtrair}
-    />
+    <div className="flex flex-col h-full">
+      {canExtrair && (
+        <div className="flex justify-end px-4 pt-3 shrink-0">
+          <DeleteTopicButton topicId={topicId} communityId={communityId} topicTitle={topic.title} />
+        </div>
+      )}
+      <TopicPageClient
+        communityId={communityId}
+        topicId={topicId}
+        topic={topic}
+        initialTopics={topics}
+        initialMessages={messages}
+        initialSummary={summary}
+        canExtrair={canExtrair}
+      />
+    </div>
   );
 }

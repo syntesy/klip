@@ -146,6 +146,29 @@ export async function topicsRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // Delete topic — owner/moderator only
+  fastify.delete<{ Params: { id: string } }>(
+    "/:id",
+    { preHandler: requireAuth },
+    async (req, reply) => {
+      const [topic] = await db.select().from(topics).where(eq(topics.id, req.params.id)).limit(1);
+      if (!topic) return reply.status(404).send({ error: "Topic not found" });
+
+      const [member] = await db
+        .select()
+        .from(communityMembers)
+        .where(and(eq(communityMembers.communityId, topic.communityId), eq(communityMembers.userId, req.userId)))
+        .limit(1);
+
+      if (!member || (member.role !== "owner" && member.role !== "moderator")) {
+        return reply.status(403).send({ error: "Only owner or moderator can delete topics" });
+      }
+
+      await db.delete(topics).where(eq(topics.id, req.params.id));
+      return reply.status(204).send();
+    }
+  );
+
   // Unpin — owner/moderator only
   fastify.delete<{ Params: { id: string } }>(
     "/:id/pin",

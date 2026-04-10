@@ -36,11 +36,11 @@ function timeAgo(dateStr: string): string {
 }
 
 interface Props {
-  params: { communityId: string };
+  params: Promise<{ communityId: string }>;
 }
 
 export default async function BibliotecaPage({ params }: Props) {
-  const { communityId } = params;
+  const { communityId } = await params;
 
   const { getToken } = await auth();
   const token = await getToken();

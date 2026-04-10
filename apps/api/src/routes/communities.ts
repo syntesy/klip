@@ -155,6 +155,26 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Delete community — owner only
+  fastify.delete<{ Params: { id: string } }>(
+    "/:id",
+    { preHandler: requireAuth },
+    async (req, reply) => {
+      const [member] = await db
+        .select()
+        .from(communityMembers)
+        .where(and(eq(communityMembers.communityId, req.params.id), eq(communityMembers.userId, req.userId)))
+        .limit(1);
+
+      if (!member || member.role !== "owner") {
+        return reply.status(403).send({ error: "Only the owner can delete this community" });
+      }
+
+      await db.delete(communities).where(eq(communities.id, req.params.id));
+      return reply.status(204).send();
+    }
+  );
+
   // QR Code da comunidade
   fastify.get<{ Params: { id: string } }>(
     "/:id/qrcode",

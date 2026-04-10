@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { NewTopicButton } from "@/components/communities/NewTopicButton";
 import { InviteButton } from "@/components/communities/InviteButton";
+import { DeleteCommunityButton } from "@/components/communities/DeleteCommunityButton";
 
 interface Props {
-  params: { communityId: string };
+  params: Promise<{ communityId: string }>;
 }
 
 interface Community {
@@ -59,7 +60,7 @@ const STATUS_DOT = {
 } as const;
 
 export default async function CommunityPage({ params }: Props) {
-  const { communityId } = params;
+  const { communityId } = await params;
 
   const { getToken } = await auth();
   const token = await getToken();
@@ -87,6 +88,7 @@ export default async function CommunityPage({ params }: Props) {
           )}
         </div>
         <div className="flex gap-2">
+          <DeleteCommunityButton communityId={communityId} communityName={community.name} />
           <InviteButton communityId={communityId} />
           <NewTopicButton communityId={communityId} />
         </div>

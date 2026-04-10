@@ -3,11 +3,31 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
-import { MoreHorizontal, Rss, Bookmark, CheckSquare, Sparkles } from "lucide-react";
+import { useUser, useClerk } from "@clerk/nextjs";
+import { MoreHorizontal, Rss, Bookmark, CheckSquare, Sparkles, LogOut } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { KlipLogo } from "@/components/ui/KlipLogo";
 import { useDarkMode } from "@/hooks/useDarkMode";
+
+// ─── User menu dropdown ───────────────────────────────────────────────────────
+
+function UserMenu({ onClose }: { onClose: () => void }) {
+  const { signOut } = useClerk();
+  return (
+    <div className="absolute bottom-[48px] right-[8px] z-50 bg-bg-surface border border-border rounded-[10px] shadow-lg py-1 w-[160px]">
+      <button
+        type="button"
+        onClick={() => signOut({ redirectUrl: "/sign-in" })}
+        className="flex items-center gap-2 w-full px-3 py-[7px] text-[13px] text-red-500 hover:bg-bg-subtle transition-colors rounded-[7px] mx-1 pr-2"
+        style={{ width: "calc(100% - 8px)" }}
+      >
+        <LogOut size={13} strokeWidth={1.75} />
+        Sair da conta
+      </button>
+    </div>
+  );
+}
 
 // ─── Theme icons ─────────────────────────────────────────────────────────────
 
@@ -231,6 +251,19 @@ function UserFooterWithClerk() {
   const { user, isLoaded } = useUser();
   const { theme, toggle, mounted } = useDarkMode();
   const isDark = mounted && theme === "dark";
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [menuOpen]);
 
   if (!isLoaded) {
     return (
@@ -242,7 +275,9 @@ function UserFooterWithClerk() {
   const imageUrl = user?.imageUrl;
 
   return (
-    <div className="flex items-center gap-[9px] px-[14px] py-[10px] border-t border-[var(--color-sidebar-border)] shrink-0">
+    <div ref={menuRef} className="relative flex items-center gap-[9px] px-[14px] py-[10px] border-t border-[var(--color-sidebar-border)] shrink-0">
+      {menuOpen && <UserMenu onClose={() => setMenuOpen(false)} />}
+
       {/* Avatar */}
       <div
         className="w-[32px] h-[32px] rounded-full overflow-hidden shrink-0 flex items-center justify-center text-[12px] font-bold text-white"
@@ -285,9 +320,10 @@ function UserFooterWithClerk() {
         {isDark ? <SunIcon /> : <MoonIcon />}
       </button>
 
-      {/* Three dots */}
+      {/* Three dots → opens user menu */}
       <button
         type="button"
+        onClick={() => setMenuOpen((v) => !v)}
         aria-label="Opções do usuário"
         className="flex items-center justify-center w-6 h-6 rounded-[6px] border-0 bg-transparent text-text-3 cursor-pointer shrink-0 p-0 transition-colors hover:bg-[var(--color-sidebar-hover)]"
       >
