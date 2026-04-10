@@ -106,11 +106,20 @@ export function setupSocketAuth(io: KlipServer): void {
 
 // ─── Typing state ─────────────────────────────────────────────────────────────
 
-// topicId → Map<userId, TypingUser>
-const typingState = new Map<string, Map<string, TypingUser>>();
+const TYPING_TTL_MS = 10_000; // auto-expire after 10s if no typing:stop received
+const TYPING_CLEANUP_INTERVAL_MS = 5_000;
+
+// Internal entry includes TTL; only TypingUser fields are broadcast to clients
+interface TypingEntry extends TypingUser {
+  exp: number; // unix ms
+}
+
+// topicId → Map<userId, TypingEntry>
+const typingState = new Map<string, Map<string, TypingEntry>>();
 
 function broadcastTyping(io: KlipServer, topicId: string): void {
-  const users = Array.from(typingState.get(topicId)?.values() ?? []);
+  const users: TypingUser[] = [];
+  typingState.get(topicId)?.forEach(({ userId, name }) => users.push({ userId, name }));
   io.to(`topic:${topicId}`).emit("typing:update", users);
 }
 
@@ -119,9 +128,38 @@ function clearTyping(io: KlipServer, topicId: string, userId: string): void {
   broadcastTyping(io, topicId);
 }
 
+// Periodically evict stale typing entries to prevent unbounded memory growth
+// (e.g. clients that disconnect without sending typing:stop)
+setInterval(() => {
+  const now = Date.now();
+  for (const [topicId, users] of typingState) {
+    let changed = false;
+    for (const [uid, entry] of users) {
+      if (entry.exp < now) {
+        users.delete(uid);
+        changed = true;
+      }
+    }
+    if (users.size === 0) {
+      typingState.delete(topicId);
+    } else if (changed) {
+      // Re-broadcast so clients clear the stale "X is typing" indicator
+      // io is not in scope here — we store a reference via module-level var
+      _io?.to(`topic:${topicId}`).emit(
+        "typing:update",
+        Array.from(users.values()).map(({ userId, name }) => ({ userId, name }))
+      );
+    }
+  }
+}, TYPING_CLEANUP_INTERVAL_MS).unref(); // unref so the interval doesn't keep the process alive
+
+// Module-level io reference for use inside the cleanup interval
+let _io: KlipServer | null = null;
+
 // ─── Event handlers ───────────────────────────────────────────────────────────
 
 export function registerSocketHandlers(io: KlipServer): void {
+  _io = io;
   setIo(io);
   setupSocketAuth(io);
 
@@ -237,50 +275,50 @@ export function registerSocketHandlers(io: KlipServer): void {
 
         // ── Mention notifications ──────────────────────────────────────────
         const mentionRegex = /@([\w.-]+)/g;
-        const mentionedHandles: string[] = [];
+        const mentionedHandles = new Set<string>();
         let m: RegExpExecArray | null;
         while ((m = mentionRegex.exec(content)) !== null) {
           if (m[1] && m[1].toLowerCase() !== "klip") {
-            mentionedHandles.push(m[1].toLowerCase());
+            mentionedHandles.add(m[1].toLowerCase());
           }
         }
 
-        if (mentionedHandles.length > 0) {
-          // Get the community for this topic
-          const [topicRow] = await db
-            .select({ communityId: topics.communityId })
-            .from(topics)
-            .where(eq(topics.id, topicId))
-            .limit(1);
+        if (mentionedHandles.size > 0) {
+          // Reuse communityId already fetched during auth check — no extra query
+          const { communityId } = topicForAuth;
 
-          if (topicRow) {
-            // Get all members with their display names
-            const members = await db
-              .select({ userId: communityMembers.userId, displayName: communityMembers.displayName })
-              .from(communityMembers)
-              .where(eq(communityMembers.communityId, topicRow.communityId));
+          const members = await db
+            .select({ userId: communityMembers.userId, displayName: communityMembers.displayName })
+            .from(communityMembers)
+            .where(eq(communityMembers.communityId, communityId));
 
-            // Match @handle against displayName (case-insensitive first-word match)
-            const notifValues = members
-              .filter((mb) => mb.userId !== userId) // don't notify self
-              .filter((mb) => {
-                if (!mb.displayName) return false;
-                const nameParts = mb.displayName.toLowerCase().split(/\s+/);
-                return mentionedHandles.some((h) =>
-                  nameParts.some((part) => part === h || part.startsWith(h))
-                );
-              })
-              .map((mb) => ({
-                communityId: topicRow.communityId,
-                topicId,
-                messageId: msg.id,
-                recipientClerkId: mb.userId,
-                type: "mention" as const,
-              }));
-
-            if (notifValues.length > 0) {
-              await db.insert(notifications).values(notifValues).onConflictDoNothing();
+          // Build word→userId map for O(n) matching instead of O(n²) nested filter
+          const wordToUser = new Map<string, string>();
+          for (const mb of members) {
+            if (!mb.displayName || mb.userId === userId) continue;
+            for (const word of mb.displayName.toLowerCase().split(/\s+/)) {
+              if (word) wordToUser.set(word, mb.userId);
             }
+          }
+
+          const recipientIds = new Set<string>();
+          for (const handle of mentionedHandles) {
+            for (const [word, uid] of wordToUser) {
+              if (word === handle || word.startsWith(handle)) {
+                recipientIds.add(uid);
+              }
+            }
+          }
+
+          if (recipientIds.size > 0) {
+            const notifValues = [...recipientIds].map((recipientClerkId) => ({
+              communityId,
+              topicId,
+              messageId: msg.id,
+              recipientClerkId,
+              type: "mention" as const,
+            }));
+            await db.insert(notifications).values(notifValues).onConflictDoNothing();
           }
         }
       } catch (err) {
@@ -294,7 +332,7 @@ export function registerSocketHandlers(io: KlipServer): void {
       if (!typingState.has(topicId)) {
         typingState.set(topicId, new Map());
       }
-      typingState.get(topicId)!.set(userId, { userId, name });
+      typingState.get(topicId)!.set(userId, { userId, name, exp: Date.now() + TYPING_TTL_MS });
       broadcastTyping(io, topicId);
     });
 

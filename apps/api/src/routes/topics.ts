@@ -1,13 +1,10 @@
 import type { FastifyInstance } from "fastify";
-import { createClerkClient } from "@clerk/backend";
 import { requireAuth } from "../plugins/auth.js";
 import { db } from "../lib/db.js";
+import { bulkGetClerkDisplayNames } from "../lib/clerkCache.js";
 import { topics, communityMembers, messages } from "@klip/db/schema";
 import { eq, and, desc, ilike, isNull } from "drizzle-orm";
 import { z } from "zod";
-
-// Used only for bulk getUserList in search — individual lookups go through clerkCache
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY ?? "" });
 
 const createTopicSchema = z.object({
   communityId: z.string().uuid(),
@@ -23,8 +20,12 @@ export async function topicsRoutes(fastify: FastifyInstance) {
     async (req, reply) => {
       const { communityId } = req.query;
 
+      if (!communityId) {
+        return reply.status(400).send({ error: "communityId is required" });
+      }
+
       // Verify membership
-      const member = await db
+      const [member] = await db
         .select()
         .from(communityMembers)
         .where(
@@ -35,7 +36,7 @@ export async function topicsRoutes(fastify: FastifyInstance) {
         )
         .limit(1);
 
-      if (member.length === 0) {
+      if (!member) {
         return reply.status(403).send({ error: "Not a member" });
       }
 
@@ -47,7 +48,7 @@ export async function topicsRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // Get single topic by id
+  // Get single topic by id — verifies both topic existence AND community membership
   fastify.get<{ Params: { id: string } }>(
     "/:id",
     { preHandler: requireAuth },
@@ -62,7 +63,9 @@ export async function topicsRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: "Topic not found" });
       }
 
-      const member = await db
+      // Check membership in the community this topic belongs to.
+      // This prevents cross-community data leakage if a topic ID is guessed.
+      const [member] = await db
         .select()
         .from(communityMembers)
         .where(
@@ -73,7 +76,7 @@ export async function topicsRoutes(fastify: FastifyInstance) {
         )
         .limit(1);
 
-      if (member.length === 0) {
+      if (!member) {
         return reply.status(403).send({ error: "Access denied" });
       }
 
@@ -91,7 +94,7 @@ export async function topicsRoutes(fastify: FastifyInstance) {
 
     const { communityId, title, description } = parsed.data;
 
-    // Verify membership and permission (owner or moderator can create)
+    // Any member can create a topic
     const [member] = await db
       .select()
       .from(communityMembers)
@@ -123,13 +126,22 @@ export async function topicsRoutes(fastify: FastifyInstance) {
       const { messageId, content, authorName } = req.body ?? {};
       if (!messageId) return reply.status(400).send({ error: "messageId required" });
 
-      const [topic] = await db.select().from(topics).where(eq(topics.id, req.params.id)).limit(1);
+      const [topic] = await db
+        .select()
+        .from(topics)
+        .where(eq(topics.id, req.params.id))
+        .limit(1);
       if (!topic) return reply.status(404).send({ error: "Topic not found" });
 
       const [member] = await db
         .select()
         .from(communityMembers)
-        .where(and(eq(communityMembers.communityId, topic.communityId), eq(communityMembers.userId, req.userId)))
+        .where(
+          and(
+            eq(communityMembers.communityId, topic.communityId),
+            eq(communityMembers.userId, req.userId)
+          )
+        )
         .limit(1);
 
       if (!member || (member.role !== "owner" && member.role !== "moderator")) {
@@ -138,7 +150,11 @@ export async function topicsRoutes(fastify: FastifyInstance) {
 
       const [updated] = await db
         .update(topics)
-        .set({ pinnedMessageId: messageId, pinnedMessageContent: content ?? null, pinnedMessageAuthor: authorName ?? null })
+        .set({
+          pinnedMessageId: messageId,
+          pinnedMessageContent: content ?? null,
+          pinnedMessageAuthor: authorName ?? null,
+        })
         .where(eq(topics.id, req.params.id))
         .returning();
 
@@ -151,13 +167,22 @@ export async function topicsRoutes(fastify: FastifyInstance) {
     "/:id",
     { preHandler: requireAuth },
     async (req, reply) => {
-      const [topic] = await db.select().from(topics).where(eq(topics.id, req.params.id)).limit(1);
+      const [topic] = await db
+        .select()
+        .from(topics)
+        .where(eq(topics.id, req.params.id))
+        .limit(1);
       if (!topic) return reply.status(404).send({ error: "Topic not found" });
 
       const [member] = await db
         .select()
         .from(communityMembers)
-        .where(and(eq(communityMembers.communityId, topic.communityId), eq(communityMembers.userId, req.userId)))
+        .where(
+          and(
+            eq(communityMembers.communityId, topic.communityId),
+            eq(communityMembers.userId, req.userId)
+          )
+        )
         .limit(1);
 
       if (!member || (member.role !== "owner" && member.role !== "moderator")) {
@@ -174,13 +199,22 @@ export async function topicsRoutes(fastify: FastifyInstance) {
     "/:id/pin",
     { preHandler: requireAuth },
     async (req, reply) => {
-      const [topic] = await db.select().from(topics).where(eq(topics.id, req.params.id)).limit(1);
+      const [topic] = await db
+        .select()
+        .from(topics)
+        .where(eq(topics.id, req.params.id))
+        .limit(1);
       if (!topic) return reply.status(404).send({ error: "Topic not found" });
 
       const [member] = await db
         .select()
         .from(communityMembers)
-        .where(and(eq(communityMembers.communityId, topic.communityId), eq(communityMembers.userId, req.userId)))
+        .where(
+          and(
+            eq(communityMembers.communityId, topic.communityId),
+            eq(communityMembers.userId, req.userId)
+          )
+        )
         .limit(1);
 
       if (!member || (member.role !== "owner" && member.role !== "moderator")) {
@@ -198,54 +232,76 @@ export async function topicsRoutes(fastify: FastifyInstance) {
   );
 
   // Search messages in a topic
+  // Search term is length-capped to prevent resource exhaustion.
+  // Soft-deleted messages are excluded. Author names come from the member cache.
   fastify.get<{ Params: { id: string }; Querystring: { q: string } }>(
     "/:id/messages/search",
     { preHandler: requireAuth },
     async (req, reply) => {
-      const q = (req.query.q ?? "").trim();
+      // Sanitise and cap the query string to prevent resource exhaustion
+      const q = (req.query.q ?? "").trim().substring(0, 100);
       if (q.length < 2) return reply.send([]);
 
-      const [topic] = await db.select().from(topics).where(eq(topics.id, req.params.id)).limit(1);
+      const [topic] = await db
+        .select()
+        .from(topics)
+        .where(eq(topics.id, req.params.id))
+        .limit(1);
       if (!topic) return reply.status(404).send({ error: "Topic not found" });
 
       const [member] = await db
         .select()
         .from(communityMembers)
-        .where(and(eq(communityMembers.communityId, topic.communityId), eq(communityMembers.userId, req.userId)))
+        .where(
+          and(
+            eq(communityMembers.communityId, topic.communityId),
+            eq(communityMembers.userId, req.userId)
+          )
+        )
         .limit(1);
       if (!member) return reply.status(403).send({ error: "Access denied" });
 
       const rows = await db
         .select()
         .from(messages)
-        .where(and(
-          eq(messages.topicId, req.params.id),
-          ilike(messages.content, `%${q}%`),
-          isNull(messages.deletedAt)
-        ))
+        .where(
+          and(
+            eq(messages.topicId, req.params.id),
+            ilike(messages.content, `%${q}%`),
+            isNull(messages.deletedAt)      // exclude soft-deleted
+          )
+        )
         .orderBy(desc(messages.createdAt))
         .limit(20);
 
-      // Hydrate author names from Clerk
-      const uniqueAuthorIds = [...new Set(rows.map((m) => m.authorId))];
-      const authorMap = new Map<string, string>();
-      if (uniqueAuthorIds.length > 0) {
-        try {
-          const { data: clerkUsers } = await clerk.users.getUserList({
-            userId: uniqueAuthorIds,
-            limit: uniqueAuthorIds.length,
-          });
-          for (const u of clerkUsers) {
-            authorMap.set(u.id, u.fullName ?? u.firstName ?? u.emailAddresses[0]?.emailAddress ?? u.id);
-          }
-        } catch { /* non-fatal */ }
+      if (rows.length === 0) return [];
+
+      // Resolve author names from the community member cache
+      const memberRows = await db
+        .select({ userId: communityMembers.userId, displayName: communityMembers.displayName })
+        .from(communityMembers)
+        .where(eq(communityMembers.communityId, topic.communityId));
+
+      const memberNameMap = new Map<string, string>(
+        memberRows
+          .filter((m) => m.displayName != null)
+          .map((m) => [m.userId, m.displayName as string])
+      );
+
+      // Bulk-fetch Clerk names for any IDs not in the member cache
+      const unknownIds = [...new Set(rows.map((r) => r.authorId))].filter(
+        (id) => !memberNameMap.has(id)
+      );
+      if (unknownIds.length > 0) {
+        const clerkNames = await bulkGetClerkDisplayNames(unknownIds);
+        for (const [id, name] of clerkNames) memberNameMap.set(id, name);
       }
 
       return rows.map((m) => ({
         id: m.id,
         content: m.content,
         authorId: m.authorId,
-        authorName: authorMap.get(m.authorId) ?? m.authorId,
+        authorName: memberNameMap.get(m.authorId) ?? m.authorId,
         createdAt: m.createdAt,
       }));
     }

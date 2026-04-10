@@ -56,6 +56,28 @@ await fastify.register(rateLimit, {
   }),
 });
 
+// ── CSRF / Origin check ────────────────────────────────────────────────────────
+// Defence-in-depth: reject state-mutating requests (POST/PUT/PATCH/DELETE) that
+// carry an Origin header pointing at a disallowed host.
+// - Same-origin browser requests have no Origin header → allowed.
+// - Non-browser clients (mobile, curl, server-to-server) have no Origin → allowed.
+// - Cross-origin browser requests from our frontend have a matching Origin → allowed.
+// - CSRF attempts from a third-party page will send a non-matching Origin → blocked.
+//
+// This complements the JWT Bearer auth (which also blocks CSRF on its own)
+// and the CORS config already in place.
+const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const WEB_ORIGINS_SET = new Set(WEB_ORIGINS);
+
+fastify.addHook("onRequest", (req, reply, done) => {
+  const origin = req.headers["origin"];
+  if (origin && MUTATION_METHODS.has(req.method) && !WEB_ORIGINS_SET.has(origin)) {
+    reply.status(403).send({ error: "Forbidden: invalid origin" });
+    return;
+  }
+  done();
+});
+
 // ── Routes ─────────────────────────────────────────────────────────────────────
 await fastify.register(communitiesRoutes, { prefix: "/api/communities" });
 await fastify.register(topicsRoutes, { prefix: "/api/topics" });

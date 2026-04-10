@@ -24,12 +24,12 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
     return rows.map((r) => r.community);
   });
 
-  // Get single community
+  // Get single community — membership check first, then fetch
   fastify.get<{ Params: { id: string } }>(
     "/:id",
     { preHandler: requireAuth },
     async (req, reply) => {
-      const member = await db
+      const [member] = await db
         .select()
         .from(communityMembers)
         .where(
@@ -40,7 +40,7 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
         )
         .limit(1);
 
-      if (member.length === 0) {
+      if (!member) {
         return reply.status(403).send({ error: "Not a member" });
       }
 
@@ -88,7 +88,7 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
     { preHandler: requireAuth },
     async (req, reply) => {
       // Must be a member to see other members
-      const self = await db
+      const [self] = await db
         .select()
         .from(communityMembers)
         .where(
@@ -99,7 +99,7 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
         )
         .limit(1);
 
-      if (self.length === 0) {
+      if (!self) {
         return reply.status(403).send({ error: "Not a member" });
       }
 
@@ -116,7 +116,8 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // Create community
+  // Create community — wrapped in a transaction so the community and its
+  // owner membership are either both committed or both rolled back.
   fastify.post("/", { preHandler: requireAuth }, async (req, reply) => {
     const parsed = createCommunitySchema.safeParse(req.body);
 
@@ -127,35 +128,38 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
     const { name, slug, description } = parsed.data;
 
     try {
-      const [community] = await db
-        .insert(communities)
-        .values({ name, slug, description, ownerId: req.userId })
-        .returning();
+      const community = await db.transaction(async (tx) => {
+        const [newCommunity] = await tx
+          .insert(communities)
+          .values({ name, slug, description, ownerId: req.userId })
+          .returning();
 
-      if (!community) {
-        return reply.status(500).send({ error: "Failed to create community" });
-      }
+        if (!newCommunity) throw new Error("insert returned no rows");
 
-      // Add creator as owner member
-      await db.insert(communityMembers).values({
-        communityId: community.id,
-        userId: req.userId,
-        role: "owner",
+        // Add creator as owner member — inside the same transaction so the
+        // two rows are guaranteed to be consistent even under failures.
+        await tx.insert(communityMembers).values({
+          communityId: newCommunity.id,
+          userId: req.userId,
+          role: "owner",
+        });
+
+        return newCommunity;
       });
 
       return reply.status(201).send(community);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       fastify.log.error({ err }, "POST /api/communities failed");
-      // Unique slug constraint
+
       if (msg.includes("communities_slug_unique") || msg.includes("duplicate key")) {
         return reply.status(409).send({ error: "Esse slug já está em uso. Tente outro." });
       }
-      return reply.status(500).send({ error: "Erro interno ao criar comunidade", detail: msg });
+      return reply.status(500).send({ error: "Erro interno ao criar comunidade" });
     }
   });
 
-  // Delete community — owner only
+  // Delete community — owner only; cascade handles members/topics via FK
   fastify.delete<{ Params: { id: string } }>(
     "/:id",
     { preHandler: requireAuth },
@@ -163,7 +167,12 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
       const [member] = await db
         .select()
         .from(communityMembers)
-        .where(and(eq(communityMembers.communityId, req.params.id), eq(communityMembers.userId, req.userId)))
+        .where(
+          and(
+            eq(communityMembers.communityId, req.params.id),
+            eq(communityMembers.userId, req.userId)
+          )
+        )
         .limit(1);
 
       if (!member || member.role !== "owner") {
@@ -180,6 +189,20 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
     "/:id/qrcode",
     { preHandler: requireAuth },
     async (req, reply) => {
+      // Membership check first — no point fetching the community if user can't access it
+      const [member] = await db
+        .select()
+        .from(communityMembers)
+        .where(
+          and(
+            eq(communityMembers.communityId, req.params.id),
+            eq(communityMembers.userId, req.userId)
+          )
+        )
+        .limit(1);
+
+      if (!member) return reply.status(403).send({ error: "Access denied" });
+
       const [community] = await db
         .select({ id: communities.id, slug: communities.slug })
         .from(communities)
@@ -188,17 +211,10 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
 
       if (!community) return reply.status(404).send({ error: "Community not found" });
 
-      const [member] = await db
-        .select()
-        .from(communityMembers)
-        .where(and(eq(communityMembers.communityId, community.id), eq(communityMembers.userId, req.userId)))
-        .limit(1);
-
-      if (!member) return reply.status(403).send({ error: "Access denied" });
-
-      const base = process.env.NODE_ENV === "production"
-        ? "https://useklip.io"
-        : (process.env.WEB_URL ?? "http://localhost:3000");
+      const base =
+        process.env.NODE_ENV === "production"
+          ? (process.env.WEB_URL ?? "https://www.digitalklip.com")
+          : (process.env.WEB_URL ?? "http://localhost:3000");
       const url = `${base}/convite/${community.slug}`;
 
       const svg = await QRCode.toString(url, { type: "svg", margin: 2, width: 200 });

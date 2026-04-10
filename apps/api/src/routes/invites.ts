@@ -162,66 +162,82 @@ export async function invitesRoutes(fastify: FastifyInstance) {
   );
 
   // ── POST /api/invites/:code/accept ────────────────────────────────────────
-  // Requires auth — joins the community linked to the invite code
+  // Requires auth — joins the community linked to the invite code.
+  // The entire check-and-join is wrapped in a transaction with a row-level
+  // lock (SELECT FOR UPDATE) on the invite row so that concurrent accepts
+  // cannot both pass the maxUses check and both insert a member.
   fastify.post<{ Params: { code: string } }>(
     "/:code/accept",
     { preHandler: requireAuth },
     async (req, reply) => {
       const { code: param } = req.params;
 
-      // Support both slug (new) and random code (legacy)
-      const [invite] = await db
-        .select()
-        .from(invites)
-        .where(or(eq(invites.slug, param), eq(invites.code, param)))
-        .limit(1);
-
-      if (!invite) {
-        return reply.status(404).send({ error: "Invite not found" });
-      }
-
-      if (invite.expiresAt && invite.expiresAt < new Date()) {
-        return reply.status(410).send({ error: "Invite expired" });
-      }
-
-      if (invite.maxUses !== null && invite.useCount >= invite.maxUses) {
-        return reply.status(410).send({ error: "Invite limit reached" });
-      }
-
-      // Already a member → redirect without error
-      const [existing] = await db
-        .select()
-        .from(communityMembers)
-        .where(
-          and(
-            eq(communityMembers.communityId, invite.communityId),
-            eq(communityMembers.userId, req.userId)
-          )
-        )
-        .limit(1);
-
-      if (existing) {
-        return { communityId: invite.communityId, alreadyMember: true };
-      }
-
-      // Resolve display name from Clerk for @mention matching (cached)
+      // Resolve display name before the transaction (Clerk call, avoid holding the lock)
       const displayName = await getClerkDisplayName(req.userId);
 
-      // Add as member
-      await db.insert(communityMembers).values({
-        communityId: invite.communityId,
-        userId: req.userId,
-        role: "member",
-        ...(displayName ? { displayName } : {}),
-      });
+      try {
+        const result = await db.transaction(async (tx) => {
+          // Lock the invite row for the duration of this transaction so
+          // concurrent accepts are serialised and cannot double-count uses.
+          const [invite] = await tx
+            .select()
+            .from(invites)
+            .where(or(eq(invites.slug, param), eq(invites.code, param)))
+            .for("update")
+            .limit(1);
 
-      // Increment use count — atomic to prevent race conditions under concurrent accepts
-      await db
-        .update(invites)
-        .set({ useCount: sql`${invites.useCount} + 1` })
-        .where(eq(invites.id, invite.id));
+          if (!invite) return { status: 404, body: { error: "Invite not found" } };
 
-      return { communityId: invite.communityId, alreadyMember: false };
+          if (invite.expiresAt && invite.expiresAt < new Date()) {
+            return { status: 410, body: { error: "Invite expired" } };
+          }
+
+          if (invite.maxUses !== null && invite.useCount >= invite.maxUses) {
+            return { status: 410, body: { error: "Invite limit reached" } };
+          }
+
+          // Check existing membership inside the transaction to prevent
+          // duplicate inserts from concurrent requests.
+          const [existing] = await tx
+            .select({ id: communityMembers.id })
+            .from(communityMembers)
+            .where(
+              and(
+                eq(communityMembers.communityId, invite.communityId),
+                eq(communityMembers.userId, req.userId)
+              )
+            )
+            .limit(1);
+
+          if (existing) {
+            return { status: 200, body: { communityId: invite.communityId, alreadyMember: true } };
+          }
+
+          await tx.insert(communityMembers).values({
+            communityId: invite.communityId,
+            userId: req.userId,
+            role: "member",
+            ...(displayName ? { displayName } : {}),
+          });
+
+          await tx
+            .update(invites)
+            .set({ useCount: sql`${invites.useCount} + 1` })
+            .where(eq(invites.id, invite.id));
+
+          return { status: 200, body: { communityId: invite.communityId, alreadyMember: false } };
+        });
+
+        return reply.status(result.status).send(result.body);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("duplicate key") || msg.includes("community_members_pkey")) {
+          // Race condition: another concurrent request inserted the member first
+          return { communityId: undefined, alreadyMember: true };
+        }
+        fastify.log.error({ err }, "POST /api/invites/:code/accept failed");
+        return reply.status(500).send({ error: "Internal error" });
+      }
     }
   );
 }

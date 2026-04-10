@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
+import { fileTypeFromBuffer } from "file-type";
 import { requireAuth } from "../plugins/auth.js";
 import type { Attachment } from "@klip/db/schema";
 
@@ -72,6 +73,21 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
         const limitMB = maxBytes / 1024 / 1024;
         return reply.status(413).send({
           error: `File too large. Maximum size for ${isImage ? "images" : "audio"} is ${limitMB} MB.`,
+        });
+      }
+
+      // Magic bytes validation — verify actual file content matches declared MIME type.
+      // Prevents attackers from uploading malicious files (e.g. an HTML/EXE)
+      // with a forged Content-Type header by inspecting the binary signature.
+      const detected = await fileTypeFromBuffer(buffer);
+      const detectedMime = detected?.mime ?? null;
+
+      // Audio/webm may be detected as video/webm by file-type (same container)
+      const normalised = detectedMime === "video/webm" ? "audio/webm" : detectedMime;
+
+      if (!normalised || (normalised !== mimeType && !ALLOWED_IMAGE_TYPES.has(normalised) && !ALLOWED_AUDIO_TYPES.has(normalised))) {
+        return reply.status(415).send({
+          error: "File content does not match the declared type. Upload rejected.",
         });
       }
 

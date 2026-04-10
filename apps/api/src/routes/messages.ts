@@ -1,12 +1,10 @@
 import type { FastifyInstance } from "fastify";
-import { createClerkClient } from "@clerk/backend";
 import { requireAuth } from "../plugins/auth.js";
 import { db } from "../lib/db.js";
+import { bulkGetClerkDisplayNames } from "../lib/clerkCache.js";
 import { messages, topics, communityMembers, messageReactions } from "@klip/db/schema";
-import { eq, and, asc, sql } from "drizzle-orm";
+import { eq, and, asc, sql, isNull } from "drizzle-orm";
 import { z } from "zod";
-
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY ?? "" });
 
 const sendMessageSchema = z.object({
   topicId: z.string().uuid(),
@@ -14,12 +12,19 @@ const sendMessageSchema = z.object({
 });
 
 export async function messagesRoutes(fastify: FastifyInstance) {
-  // Get messages for a topic (paginated)
-  fastify.get<{ Querystring: { topicId: string; cursor?: string } }>(
+  // Get messages for a topic
+  // Soft-deleted messages are excluded from the response.
+  // Author names are resolved from the communityMembers.displayName cache first,
+  // and only fall back to a Clerk bulk-lookup for any that are missing.
+  fastify.get<{ Querystring: { topicId: string } }>(
     "/",
     { preHandler: requireAuth },
     async (req, reply) => {
       const { topicId } = req.query;
+
+      if (!topicId) {
+        return reply.status(400).send({ error: "topicId is required" });
+      }
 
       // Verify access via community membership
       const [topic] = await db
@@ -32,7 +37,7 @@ export async function messagesRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: "Topic not found" });
       }
 
-      const member = await db
+      const [member] = await db
         .select()
         .from(communityMembers)
         .where(
@@ -43,45 +48,55 @@ export async function messagesRoutes(fastify: FastifyInstance) {
         )
         .limit(1);
 
-      if (member.length === 0) {
+      if (!member) {
         return reply.status(403).send({ error: "Access denied" });
       }
 
+      // Fetch messages excluding soft-deleted ones
       const rows = await db
         .select()
         .from(messages)
-        .where(eq(messages.topicId, topicId))
+        .where(
+          and(
+            eq(messages.topicId, topicId),
+            isNull(messages.deletedAt)   // ← exclude soft-deleted messages
+          )
+        )
         .orderBy(asc(messages.createdAt))
         .limit(50);
 
-      // Hydrate author names from Clerk
+      if (rows.length === 0) return [];
+
+      // Resolve author names: prefer cached displayName from communityMembers,
+      // only call Clerk for IDs not in the local cache.
+      const communityMemberRows = await db
+        .select({ userId: communityMembers.userId, displayName: communityMembers.displayName })
+        .from(communityMembers)
+        .where(eq(communityMembers.communityId, topic.communityId));
+
+      const memberNameMap = new Map<string, string>(
+        communityMemberRows
+          .filter((m) => m.displayName != null)
+          .map((m) => [m.userId, m.displayName as string])
+      );
+
+      // For any author ID not in memberNameMap, fall back to Clerk bulk-lookup
       const uniqueAuthorIds = [...new Set(rows.map((m) => m.authorId))];
-      const authorMap = new Map<string, string>();
-      if (uniqueAuthorIds.length > 0) {
-        try {
-          const { data: clerkUsers } = await clerk.users.getUserList({
-            userId: uniqueAuthorIds,
-            limit: uniqueAuthorIds.length,
-          });
-          for (const u of clerkUsers) {
-            authorMap.set(
-              u.id,
-              u.fullName ?? u.firstName ?? u.emailAddresses[0]?.emailAddress ?? u.id
-            );
-          }
-        } catch {
-          // non-fatal — fall back to authorId
-        }
+      const unknownIds = uniqueAuthorIds.filter((id) => !memberNameMap.has(id));
+      if (unknownIds.length > 0) {
+        const clerkNames = await bulkGetClerkDisplayNames(unknownIds);
+        for (const [id, name] of clerkNames) memberNameMap.set(id, name);
       }
 
       return rows.map((m) => ({
         ...m,
-        authorName: authorMap.get(m.authorId) ?? m.authorId,
+        authorName: memberNameMap.get(m.authorId) ?? m.authorId,
       }));
     }
   );
 
-  // Send message
+  // Send message (HTTP fallback — WebSocket is preferred path)
+  // Wrapped in a transaction: message insert + topic stats update are atomic.
   fastify.post("/", { preHandler: requireAuth }, async (req, reply) => {
     const parsed = sendMessageSchema.safeParse(req.body);
 
@@ -101,7 +116,7 @@ export async function messagesRoutes(fastify: FastifyInstance) {
       return reply.status(404).send({ error: "Topic not found" });
     }
 
-    const member = await db
+    const [member] = await db
       .select()
       .from(communityMembers)
       .where(
@@ -112,20 +127,29 @@ export async function messagesRoutes(fastify: FastifyInstance) {
       )
       .limit(1);
 
-    if (member.length === 0) {
+    if (!member) {
       return reply.status(403).send({ error: "Not a member" });
     }
 
-    const [message] = await db
-      .insert(messages)
-      .values({ topicId, authorId: req.userId, content })
-      .returning();
+    // Atomic: if the stats update fails the message insert is rolled back too
+    const message = await db.transaction(async (tx) => {
+      const [msg] = await tx
+        .insert(messages)
+        .values({ topicId, authorId: req.userId, content })
+        .returning();
 
-    // Update topic last activity — atomic increment to avoid race conditions
-    await db
-      .update(topics)
-      .set({ lastActivityAt: new Date(), messageCount: sql`${topics.messageCount} + 1` })
-      .where(eq(topics.id, topicId));
+      if (!msg) throw new Error("insert returned no rows");
+
+      await tx
+        .update(topics)
+        .set({
+          lastActivityAt: new Date(),
+          messageCount: sql`${topics.messageCount} + 1`,
+        })
+        .where(eq(topics.id, topicId));
+
+      return msg;
+    });
 
     return reply.status(201).send(message);
   });
@@ -150,7 +174,8 @@ export async function messagesRoutes(fastify: FastifyInstance) {
         if (msg.includes("message_reactions_unique") || msg.includes("duplicate key")) {
           return reply.status(409).send({ error: "already reacted" });
         }
-        return reply.status(500).send({ error: msg });
+        fastify.log.error({ err }, "POST /:id/reactions failed");
+        return reply.status(500).send({ error: "Internal error" });
       }
     }
   );
@@ -181,11 +206,11 @@ export async function messagesRoutes(fastify: FastifyInstance) {
   fastify.get<{ Params: { id: string } }>(
     "/:id/reactions",
     { preHandler: requireAuth },
-    async (req, _reply) => {
+    async (_req, _reply) => {
       const rows = await db
         .select()
         .from(messageReactions)
-        .where(eq(messageReactions.messageId, req.params.id));
+        .where(eq(messageReactions.messageId, _req.params.id));
       return rows;
     }
   );
