@@ -41,26 +41,37 @@ export async function voiceRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ error: "Apenas owner/moderador pode iniciar áudio" });
       }
 
-      // Check for existing active session
-      const [existing] = await db
-        .select()
-        .from(voiceSessions)
-        .where(and(eq(voiceSessions.topicId, topicId), eq(voiceSessions.status, "active")))
-        .limit(1);
-      if (existing) return reply.status(400).send({ error: "Sessão de voz já ativa" });
-
-      // Create LiveKit room
+      // Check for existing active session — wrapped in a transaction with row-level
+      // lock so concurrent start requests are serialised and cannot both succeed.
       const roomName = `klip-${topicId}`;
-      await roomService.createRoom({ name: roomName, emptyTimeout: 300, maxParticipants: 200 });
+      const session = await db.transaction(async (tx) => {
+        const [existing] = await tx
+          .select({ id: voiceSessions.id })
+          .from(voiceSessions)
+          .where(and(eq(voiceSessions.topicId, topicId), eq(voiceSessions.status, "active")))
+          .for("update")
+          .limit(1);
+        if (existing) return null;
 
-      // Persist session
-      const [session] = await db.insert(voiceSessions).values({
-        topicId,
-        communityId: topic.communityId,
-        hostClerkId: req.userId,
-        livekitRoomName: roomName,
-        status: "active",
-      }).returning();
+        const [inserted] = await tx.insert(voiceSessions).values({
+          topicId,
+          communityId: topic.communityId,
+          hostClerkId: req.userId,
+          livekitRoomName: roomName,
+          status: "active",
+        }).returning();
+        return inserted ?? null;
+      });
+
+      if (!session) return reply.status(400).send({ error: "Sessão de voz já ativa" });
+
+      // Create LiveKit room after DB session is committed to avoid orphaned rooms
+      try {
+        await roomService.createRoom({ name: roomName, emptyTimeout: 300, maxParticipants: 200 });
+      } catch (err) {
+        // Room already exists (retry scenario) — not fatal, LiveKit is idempotent for room creation
+        fastify.log.warn({ err }, "LiveKit createRoom failed — may already exist");
+      }
 
       // Host token (publish + subscribe) — 2h TTL
       const at = new AccessToken(apiKey, apiSecret, { identity: req.userId, ttl: '2h' });
@@ -72,12 +83,12 @@ export async function voiceRoutes(fastify: FastifyInstance) {
 
       // Notify all topic members via socket
       getIo().to(`topic:${topicId}`).emit("voice:started", {
-        sessionId: session!.id,
+        sessionId: session.id,
         hostName,
         hostClerkId: req.userId,
       });
 
-      return { sessionId: session!.id, token, livekitUrl };
+      return { sessionId: session.id, token, livekitUrl };
     }
   );
 

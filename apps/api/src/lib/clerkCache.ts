@@ -9,6 +9,15 @@ const TTL_MS = 5 * 60 * 1000; // 5 minutes
 const FETCH_TIMEOUT_MS = 5_000; // 5 seconds — Clerk must respond within this window
 const cache = new Map<string, CachedName>();
 
+// Purge expired entries every 10 minutes to prevent unbounded Map growth
+// in long-running processes with high user cardinality.
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, entry] of cache) {
+    if (entry.exp <= now) cache.delete(id);
+  }
+}, 10 * 60 * 1000).unref();
+
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
     promise,

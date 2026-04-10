@@ -134,6 +134,26 @@ function getTypingText(users: TypingUser[]): string {
   return `${users[0]!.name} e mais ${users.length - 1} estão digitando…`;
 }
 
+// ─── Shared reaction toggle ───────────────────────────────────────────────────
+
+/**
+ * Computes the next optimistic reactions state for a toggle action.
+ * Shared by ReactionBubbles and MessageHoverBar to avoid duplicate logic.
+ */
+function computeNextReactions(reactions: Reaction[], emoji: string): { next: Reaction[]; method: "POST" | "DELETE" } {
+  const existing = reactions.find((r) => r.emoji === emoji);
+  if (!existing) {
+    return { next: [...reactions, { emoji, count: 1, reactedByMe: true }], method: "POST" };
+  }
+  if (existing.reactedByMe) {
+    const next = existing.count > 1
+      ? reactions.map((r) => r.emoji === emoji ? { ...r, count: r.count - 1, reactedByMe: false } : r)
+      : reactions.filter((r) => r.emoji !== emoji);
+    return { next, method: "DELETE" };
+  }
+  return { next: reactions.map((r) => r.emoji === emoji ? { ...r, count: r.count + 1, reactedByMe: true } : r), method: "POST" };
+}
+
 /** Inline markdown → React nodes. Handles **bold**, *italic*, and @mentions. */
 function parseInline(text: string): React.ReactNode[] {
   // Split on bold, italic, and @mentions
@@ -389,17 +409,7 @@ function ReactionBubbles({
   const { getToken } = useAuth();
 
   const toggle = useCallback(async (emoji: string) => {
-    const existing = reactions.find((r) => r.emoji === emoji);
-    const method = existing?.reactedByMe ? "DELETE" : "POST";
-
-    const next: Reaction[] = existing
-      ? existing.reactedByMe
-        ? existing.count > 1
-          ? reactions.map((r) => r.emoji === emoji ? { ...r, count: r.count - 1, reactedByMe: false } : r)
-          : reactions.filter((r) => r.emoji !== emoji)
-        : reactions.map((r) => r.emoji === emoji ? { ...r, count: r.count + 1, reactedByMe: true } : r)
-      : [...reactions, { emoji, count: 1, reactedByMe: true }];
-
+    const { next, method } = computeNextReactions(reactions, emoji);
     onReactionsChange(messageId, next);
 
     const token = await getToken();
@@ -474,18 +484,7 @@ function MessageHoverBar({
   const handleReact = useCallback(async (emoji: string) => {
     setPickerOpen(false);
     if (!onReactionsChange) return;
-    const reactions = msg.reactions ?? [];
-    const existing = reactions.find((r) => r.emoji === emoji);
-    const method = existing?.reactedByMe ? "DELETE" : "POST";
-
-    const next: Reaction[] = existing
-      ? existing.reactedByMe
-        ? existing.count > 1
-          ? reactions.map((r) => r.emoji === emoji ? { ...r, count: r.count - 1, reactedByMe: false } : r)
-          : reactions.filter((r) => r.emoji !== emoji)
-        : reactions.map((r) => r.emoji === emoji ? { ...r, count: r.count + 1, reactedByMe: true } : r)
-      : [...reactions, { emoji, count: 1, reactedByMe: true }];
-
+    const { next, method } = computeNextReactions(msg.reactions ?? [], emoji);
     onReactionsChange(msg.id, next);
 
     const token = await getToken();

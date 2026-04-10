@@ -1,9 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { requireAuth } from "../plugins/auth.js";
 import { db } from "../lib/db.js";
+import { getIo } from "../lib/io.js";
 import { bulkGetClerkDisplayNames } from "../lib/clerkCache.js";
 import { messages, topics, communityMembers, messageReactions } from "@klip/db/schema";
-import { eq, and, asc, desc, sql, isNull, lt } from "drizzle-orm";
+import { eq, and, asc, desc, sql, isNull, lt, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 const sendMessageSchema = z.object({
@@ -131,12 +132,19 @@ export async function messagesRoutes(fastify: FastifyInstance) {
       // When paginating backwards (before cursor), results come newest-first; reverse for UI
       if (before) page.reverse();
 
-      // Resolve author names: prefer cached displayName from communityMembers,
-      // only call Clerk for IDs not in the local cache.
+      // Resolve author names: prefer cached displayName from communityMembers.
+      // Only fetch members whose userId appears in this page — not the entire community —
+      // so the query stays O(page authors) instead of O(community size).
+      const uniqueAuthorIds = [...new Set(page.map((m) => m.authorId))];
       const communityMemberRows = await db
         .select({ userId: communityMembers.userId, displayName: communityMembers.displayName })
         .from(communityMembers)
-        .where(eq(communityMembers.communityId, topic.communityId));
+        .where(
+          and(
+            eq(communityMembers.communityId, topic.communityId),
+            inArray(communityMembers.userId, uniqueAuthorIds)
+          )
+        );
 
       const memberNameMap = new Map<string, string>(
         communityMemberRows
@@ -145,7 +153,6 @@ export async function messagesRoutes(fastify: FastifyInstance) {
       );
 
       // For any author ID not in memberNameMap, fall back to Clerk bulk-lookup
-      const uniqueAuthorIds = [...new Set(page.map((m) => m.authorId))];
       const unknownIds = uniqueAuthorIds.filter((id) => !memberNameMap.has(id));
       if (unknownIds.length > 0) {
         const clerkNames = await bulkGetClerkDisplayNames(unknownIds);
@@ -269,9 +276,11 @@ export async function messagesRoutes(fastify: FastifyInstance) {
 
       // Notify room so clients remove the message without a page refresh
       try {
-        const { getIo } = await import("../lib/io.js");
         getIo().to(`topic:${message.topicId}`).emit("message:deleted", req.params.id);
-      } catch { /* io not yet initialized — harmless in test environments */ }
+      } catch (err) {
+        // io not yet initialized (test environment) or socket error — DB update already committed
+        fastify.log.warn({ err }, "message:deleted socket emit failed");
+      }
 
       return reply.status(204).send();
     }
