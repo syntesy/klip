@@ -12,6 +12,7 @@ interface KlipWithMessage {
   message: {
     id: string;
     topicId: string;
+    communityId: string;
     authorId: string;
     content: string;
     createdAt: string;
@@ -90,7 +91,7 @@ export default async function KlipsPage() {
                   {timeAgo(klip.createdAt)}
                 </span>
                 <Link
-                  href={`/communities/${message.topicId}`}
+                  href={`/communities/${message.communityId}/topics/${message.topicId}`}
                   className="text-[11px] text-blue hover:underline"
                 >
                   Ver no tópico →

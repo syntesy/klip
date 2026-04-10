@@ -60,6 +60,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
         id: s.id,
         content: s.content,
         topicId: s.topicId,
+        communityId: topicMap.get(s.topicId)?.communityId ?? "",
         topicTitle: topicMap.get(s.topicId)?.title ?? "Tópico",
         generatedAt: s.createdAt,
       }));

@@ -11,14 +11,21 @@ const saveKlipSchema = z.object({
 });
 
 export async function klipsRoutes(fastify: FastifyInstance) {
-  // List user's klips — excludes soft-deleted messages
+  // List user's klips — excludes soft-deleted messages.
+  // Joins topics to include communityId so clients can build correct navigation URLs.
   fastify.get("/", { preHandler: requireAuth }, async (req) => {
-    return db
-      .select({ klip: klips, message: messages })
+    const rows = await db
+      .select({ klip: klips, message: messages, communityId: topics.communityId })
       .from(klips)
       .innerJoin(messages, eq(klips.messageId, messages.id))
+      .innerJoin(topics, eq(messages.topicId, topics.id))
       .where(and(eq(klips.userId, req.userId), isNull(messages.deletedAt)))
       .orderBy(desc(klips.createdAt));
+
+    return rows.map(({ klip, message, communityId }) => ({
+      klip,
+      message: { ...message, communityId },
+    }));
   });
 
   // Save a klip — requires community membership of the message's topic

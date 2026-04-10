@@ -323,7 +323,10 @@ export function registerSocketHandlers(io: KlipServer): void {
               recipientClerkId,
               type: "mention" as const,
             }));
-            await db.insert(notifications).values(notifValues).onConflictDoNothing();
+            const inserted = await db.insert(notifications).values(notifValues).onConflictDoNothing().returning();
+            for (const notif of inserted) {
+              io.to(`user:${notif.recipientClerkId}`).emit("notification:new", { notification: notif as Record<string, unknown> });
+            }
           }
         }
       } catch (err) {

@@ -5,6 +5,7 @@ interface DecisionSummary {
   id: string;
   content: string;
   topicId: string;
+  communityId: string;
   topicTitle: string;
   generatedAt: string;
 }
@@ -93,7 +94,7 @@ export default async function DecisionsPage() {
               </p>
               <div className="mt-3">
                 <Link
-                  href={`/communities/${d.topicId}`}
+                  href={`/communities/${d.communityId}/topics/${d.topicId}`}
                   className="text-[11px] text-blue hover:underline"
                 >
                   Ver tópico →
