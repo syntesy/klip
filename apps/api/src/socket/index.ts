@@ -223,28 +223,31 @@ export function registerSocketHandlers(io: KlipServer): void {
           return;
         }
 
-        // Persist
-        const rows = await db
-          .insert(messages)
-          .values({
-            topicId,
-            authorId: userId,
-            content: content.trim(),
-            attachments: attachments ?? [],
-            ...(replyToId ? { replyToId, replyToAuthorName, replyToContent } : {}),
-          })
-          .returning();
-        const msg = rows[0];
-        if (!msg) throw new Error("insert returned no rows");
+        // Persist — wrapped in a transaction so message insert and topic stats
+        // update are atomic. If the stats update fails, the message is rolled back.
+        const msg = await db.transaction(async (tx) => {
+          const [inserted] = await tx
+            .insert(messages)
+            .values({
+              topicId,
+              authorId: userId,
+              content: content.trim(),
+              attachments: attachments ?? [],
+              ...(replyToId ? { replyToId, replyToAuthorName, replyToContent } : {}),
+            })
+            .returning();
+          if (!inserted) throw new Error("insert returned no rows");
 
-        // Bump topic stats
-        await db
-          .update(topics)
-          .set({
-            messageCount: sql`${topics.messageCount} + 1`,
-            lastActivityAt: new Date(),
-          })
-          .where(eq(topics.id, topicId));
+          await tx
+            .update(topics)
+            .set({
+              messageCount: sql`${topics.messageCount} + 1`,
+              lastActivityAt: new Date(),
+            })
+            .where(eq(topics.id, topicId));
+
+          return inserted;
+        });
 
         // Stop typing for this user
         clearTyping(io, topicId, userId);

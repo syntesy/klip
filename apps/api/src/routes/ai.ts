@@ -4,7 +4,7 @@ import { requireAuth } from "../plugins/auth.js";
 import { db } from "../lib/db.js";
 import { checkRateLimit, anthropicCircuitBreaker, sanitizeMarkdown } from "../lib/aiGuards.js";
 import { messages, topics, communityMembers, aiSummaries } from "@klip/db/schema";
-import { eq, and, asc, desc, inArray } from "drizzle-orm";
+import { eq, and, asc, desc, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 const anthropic = new Anthropic({
@@ -39,12 +39,14 @@ export async function aiRoutes(fastify: FastifyInstance) {
     const topicIds = communityTopics.map((t) => t.id);
     const topicMap = new Map(communityTopics.map((t) => [t.id, t]));
 
-    // Get latest summary per topic
+    // Get latest summary per topic — cap at 200 to bound payload size.
+    // Deduplication below keeps one per topic, so effective return is ≤ topicIds.length.
     const summaries = await db
       .select()
       .from(aiSummaries)
       .where(inArray(aiSummaries.topicId, topicIds))
-      .orderBy(desc(aiSummaries.createdAt));
+      .orderBy(desc(aiSummaries.createdAt))
+      .limit(200);
 
     // Deduplicate: one per topic (latest only)
     const seen = new Set<string>();
@@ -156,11 +158,12 @@ export async function aiRoutes(fastify: FastifyInstance) {
       return reply.status(403).send({ error: "Access denied" });
     }
 
-    // Fetch last 100 messages
+    // Fetch last 100 non-deleted messages — soft-deleted content must not
+    // appear in AI summaries; users expect deletion to mean removal.
     const topicMessages = await db
       .select()
       .from(messages)
-      .where(eq(messages.topicId, topicId))
+      .where(and(eq(messages.topicId, topicId), isNull(messages.deletedAt)))
       .orderBy(asc(messages.createdAt))
       .limit(100);
 

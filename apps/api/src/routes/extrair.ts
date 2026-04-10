@@ -11,7 +11,7 @@ import {
   inviteCardImpressions,
   type ContentIdea,
 } from "@klip/db/schema";
-import { eq, and, inArray, asc } from "drizzle-orm";
+import { eq, and, inArray, asc, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -223,10 +223,16 @@ Maximo 4 content_ideas. Apenas JSON, sem markdown.`,
       return reply.status(403).send({ error: "Não autorizado" });
     }
 
+    // Sanitize user-provided fields before storing — they will be rendered to
+    // all community members, so XSS must be stripped even though they come
+    // from an owner/moderator (not from AI).
+    const safeTitle = sanitizeMarkdown(title);
+    const safeSummary = sanitizeMarkdown(summary);
+
     // Publish
     const [published] = await db
       .update(extractedContents)
-      .set({ title, summary, accessLevel, publishedAt: new Date() })
+      .set({ title: safeTitle, summary: safeSummary, accessLevel, publishedAt: new Date() })
       .where(eq(extractedContents.id, extractedContentId))
       .returning();
 
@@ -317,13 +323,17 @@ Maximo 4 content_ideas. Apenas JSON, sem markdown.`,
         return reply.status(403).send({ error: "Não é membro desta comunidade" });
       }
 
-      const rows = await db
+      // Filter published_at IS NOT NULL in the DB — avoids fetching all drafts
+      // only to discard them in memory, which grows unboundedly with usage.
+      const published = await db
         .select()
         .from(extractedContents)
-        .where(eq(extractedContents.communityId, communityId));
-
-      // Only published
-      const published = rows.filter((r) => r.publishedAt !== null);
+        .where(
+          and(
+            eq(extractedContents.communityId, communityId),
+            isNotNull(extractedContents.publishedAt)
+          )
+        );
 
       // If not owner/moderator: only free content visible in full
       const isPremium = member.role === "owner" || member.role === "moderator";

@@ -3,13 +3,51 @@ import { requireAuth } from "../plugins/auth.js";
 import { db } from "../lib/db.js";
 import { bulkGetClerkDisplayNames } from "../lib/clerkCache.js";
 import { messages, topics, communityMembers, messageReactions } from "@klip/db/schema";
-import { eq, and, asc, desc, sql, isNull, lt } from "drizzle-orm";
+import { eq, and, asc, desc, sql, isNull, lt, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 
 const sendMessageSchema = z.object({
   topicId: z.string().uuid(),
   content: z.string().min(1).max(4000),
 });
+
+/**
+ * Verifies the requesting user is a member of the community that owns the
+ * given message. Returns the message row on success, null if not found,
+ * or throws a 403-shaped object if membership is missing.
+ */
+async function assertMessageMembership(
+  messageId: string,
+  userId: string
+): Promise<{ ok: true } | { ok: false; status: 403 | 404 }> {
+  const [message] = await db
+    .select({ topicId: messages.topicId })
+    .from(messages)
+    .where(eq(messages.id, messageId))
+    .limit(1);
+  if (!message) return { ok: false, status: 404 };
+
+  const [topic] = await db
+    .select({ communityId: topics.communityId })
+    .from(topics)
+    .where(eq(topics.id, message.topicId))
+    .limit(1);
+  if (!topic) return { ok: false, status: 404 };
+
+  const [member] = await db
+    .select({ id: communityMembers.id })
+    .from(communityMembers)
+    .where(
+      and(
+        eq(communityMembers.communityId, topic.communityId),
+        eq(communityMembers.userId, userId)
+      )
+    )
+    .limit(1);
+  if (!member) return { ok: false, status: 403 };
+
+  return { ok: true };
+}
 
 export async function messagesRoutes(fastify: FastifyInstance) {
   // Get messages for a topic — cursor-based pagination via `before` (messageId).
@@ -22,6 +60,12 @@ export async function messagesRoutes(fastify: FastifyInstance) {
     async (req, reply) => {
       const { topicId, before } = req.query;
       const pageSize = Math.min(Math.max(Number(req.query.limit ?? 50), 1), 100);
+
+      // Validate `before` as a UUID to prevent silent fallback to page 1 on bad input
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (before !== undefined && !UUID_RE.test(before)) {
+        return reply.status(400).send({ error: "invalid cursor: before must be a valid UUID" });
+      }
 
       if (!topicId) {
         return reply.status(400).send({ error: "topicId is required" });
@@ -180,13 +224,16 @@ export async function messagesRoutes(fastify: FastifyInstance) {
     return reply.status(201).send(message);
   });
 
-  // Add reaction
+  // Add reaction — requires membership of the community that owns the message
   fastify.post<{ Params: { id: string }; Body: { emoji: string } }>(
     "/:id/reactions",
     { preHandler: requireAuth },
     async (req, reply) => {
       const { emoji } = req.body ?? {};
       if (!emoji) return reply.status(400).send({ error: "emoji required" });
+
+      const auth = await assertMessageMembership(req.params.id, req.userId);
+      if (!auth.ok) return reply.status(auth.status).send({ error: auth.status === 404 ? "Message not found" : "Access denied" });
 
       try {
         await db.insert(messageReactions).values({
@@ -206,13 +253,16 @@ export async function messagesRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // Remove reaction
+  // Remove reaction — requires membership of the community that owns the message
   fastify.delete<{ Params: { id: string }; Body: { emoji: string } }>(
     "/:id/reactions",
     { preHandler: requireAuth },
     async (req, reply) => {
       const { emoji } = req.body ?? {};
       if (!emoji) return reply.status(400).send({ error: "emoji required" });
+
+      const auth = await assertMessageMembership(req.params.id, req.userId);
+      if (!auth.ok) return reply.status(auth.status).send({ error: auth.status === 404 ? "Message not found" : "Access denied" });
 
       await db
         .delete(messageReactions)
@@ -228,15 +278,18 @@ export async function messagesRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // Get reactions for a message
+  // Get reactions for a message — requires membership
   fastify.get<{ Params: { id: string } }>(
     "/:id/reactions",
     { preHandler: requireAuth },
-    async (_req, _reply) => {
+    async (req, reply) => {
+      const auth = await assertMessageMembership(req.params.id, req.userId);
+      if (!auth.ok) return reply.status(auth.status).send({ error: auth.status === 404 ? "Message not found" : "Access denied" });
+
       const rows = await db
         .select()
         .from(messageReactions)
-        .where(eq(messageReactions.messageId, _req.params.id));
+        .where(eq(messageReactions.messageId, req.params.id));
       return rows;
     }
   );
