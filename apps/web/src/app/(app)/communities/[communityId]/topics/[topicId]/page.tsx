@@ -62,7 +62,10 @@ export default async function TopicPage({ params }: Props) {
     createdAt: string; updatedAt: string; deletedAt: string | null;
     replyToId?: string | null; replyToAuthorName?: string | null; replyToContent?: string | null;
   };
-  const messages: Message[] = (messagesData ?? []).map((m: RawMessage) => ({
+  // messagesData is { messages: RawMessage[], hasPreviousPage, nextCursor } — not a flat array.
+  // Using the paginated wrapper shape since cursor pagination was added in the API.
+  const rawMessages: RawMessage[] = (messagesData?.messages ?? []) as RawMessage[];
+  const messages: Message[] = rawMessages.map((m: RawMessage) => ({
     id: m.id,
     topicId: m.topicId,
     authorId: m.authorId,

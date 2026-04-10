@@ -65,12 +65,23 @@ export async function voiceRoutes(fastify: FastifyInstance) {
 
       if (!session) return reply.status(400).send({ error: "Sessão de voz já ativa" });
 
-      // Create LiveKit room after DB session is committed to avoid orphaned rooms
+      // Create LiveKit room after DB session is committed.
+      // If creation fails for a reason other than "room already exists",
+      // mark the session ended so future /start calls aren't blocked.
       try {
         await roomService.createRoom({ name: roomName, emptyTimeout: 300, maxParticipants: 200 });
       } catch (err) {
-        // Room already exists (retry scenario) — not fatal, LiveKit is idempotent for room creation
-        fastify.log.warn({ err }, "LiveKit createRoom failed — may already exist");
+        const msg = err instanceof Error ? err.message : String(err);
+        const alreadyExists = msg.toLowerCase().includes("already exist") || msg.includes("409");
+        if (!alreadyExists) {
+          fastify.log.error({ err }, "LiveKit createRoom failed — ending DB session to unblock future /start");
+          await db
+            .update(voiceSessions)
+            .set({ status: "ended", endedAt: new Date() })
+            .where(eq(voiceSessions.id, session.id));
+          return reply.status(503).send({ error: "Falha ao criar sala de voz. Tente novamente." });
+        }
+        fastify.log.warn({ err }, "LiveKit createRoom — room already exists, reusing");
       }
 
       // Host token (publish + subscribe) — 2h TTL
@@ -263,7 +274,11 @@ export async function voiceRoutes(fastify: FastifyInstance) {
         .limit(1);
       if (!session) return reply.status(404).send({ error: "Nenhuma sessão ativa" });
 
-      try { await roomService.deleteRoom(session.livekitRoomName); } catch { /* room may already be empty */ }
+      try {
+        await roomService.deleteRoom(session.livekitRoomName);
+      } catch (err) {
+        fastify.log.warn({ err }, "deleteRoom failed — room may already be closed by LiveKit");
+      }
 
       await db
         .update(voiceSessions)

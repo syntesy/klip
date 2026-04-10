@@ -163,6 +163,11 @@ export function registerSocketHandlers(io: KlipServer): void {
   io.on("connection", (socket: KlipSocket) => {
     const { userId, name } = socket.data;
 
+    // Each socket joins its own personal room so direct-to-user events work.
+    // voice:hand-raised (host receives it) and voice:speak-granted (participant receives it)
+    // both target user:${clerkId} — without this join they land in empty rooms.
+    void socket.join(`user:${userId}`);
+
     // ── Room management ─────────────────────────────────────────────────────
 
     socket.on("topic:join", async (topicId) => {

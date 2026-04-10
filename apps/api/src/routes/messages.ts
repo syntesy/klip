@@ -14,39 +14,32 @@ const sendMessageSchema = z.object({
 
 /**
  * Verifies the requesting user is a member of the community that owns the
- * given message. Returns the message row on success, null if not found,
- * or throws a 403-shaped object if membership is missing.
+ * given message. Uses a single JOIN query instead of 3 sequential round-trips.
+ * Returns { ok: true } on success, or { ok: false, status } on failure.
  */
 async function assertMessageMembership(
   messageId: string,
   userId: string
 ): Promise<{ ok: true } | { ok: false; status: 403 | 404 }> {
-  const [message] = await db
-    .select({ topicId: messages.topicId })
+  // Single query: messages JOIN topics JOIN communityMembers
+  // If the message doesn't exist the outer result is empty → 404
+  // If the user isn't a member the member join yields nothing → 403
+  const [row] = await db
+    .select({ memberId: communityMembers.id, messageExists: messages.id })
     .from(messages)
-    .where(eq(messages.id, messageId))
-    .limit(1);
-  if (!message) return { ok: false, status: 404 };
-
-  const [topic] = await db
-    .select({ communityId: topics.communityId })
-    .from(topics)
-    .where(eq(topics.id, message.topicId))
-    .limit(1);
-  if (!topic) return { ok: false, status: 404 };
-
-  const [member] = await db
-    .select({ id: communityMembers.id })
-    .from(communityMembers)
-    .where(
+    .innerJoin(topics, eq(topics.id, messages.topicId))
+    .leftJoin(
+      communityMembers,
       and(
-        eq(communityMembers.communityId, topic.communityId),
+        eq(communityMembers.communityId, topics.communityId),
         eq(communityMembers.userId, userId)
       )
     )
+    .where(eq(messages.id, messageId))
     .limit(1);
-  if (!member) return { ok: false, status: 403 };
 
+  if (!row) return { ok: false, status: 404 };
+  if (!row.memberId) return { ok: false, status: 403 };
   return { ok: true };
 }
 
