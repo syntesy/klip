@@ -4,15 +4,17 @@ import { randomUUID } from "node:crypto";
 import { requireAuth } from "../plugins/auth.js";
 import type { Attachment } from "@klip/db/schema";
 
-// ─── Supabase client (service role for server-side uploads) ───────────────────
-const supabaseUrl = process.env.SUPABASE_URL ?? "";
-// Prefer service key (bypasses RLS); fall back to anon key for dev
-const supabaseKey =
-  process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || "";
-
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: { persistSession: false },
-});
+// ─── Supabase client (lazy — only created when env vars are present) ─────────
+function getSupabase() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    throw new Error(
+      "SUPABASE_URL and SUPABASE_SERVICE_KEY (or SUPABASE_ANON_KEY) are required for uploads"
+    );
+  }
+  return createClient(url, key, { auth: { persistSession: false } });
+}
 
 const BUCKET = "klip-media";
 
@@ -78,7 +80,7 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
       const folder = isImage ? "images" : "audio";
       const storagePath = `${folder}/${req.userId}/${randomUUID()}.${ext}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await getSupabase().storage
         .from(BUCKET)
         .upload(storagePath, buffer, {
           contentType: mimeType,
@@ -92,7 +94,7 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
 
       const {
         data: { publicUrl },
-      } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
+      } = getSupabase().storage.from(BUCKET).getPublicUrl(storagePath);
 
       const attachment: Omit<Attachment, "duration"> = {
         type: isImage ? "image" : "audio",
