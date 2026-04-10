@@ -18,4 +18,5 @@ ENV NODE_ENV=production
 
 EXPOSE 3001
 
-CMD ["node_modules/.bin/tsx", "apps/api/src/index.ts"]
+WORKDIR /app/apps/api
+CMD ["node_modules/.bin/tsx", "src/index.ts"]
