@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, pgEnum, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, timestamp, pgEnum, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { communities } from "./communities.js";
 import { topics } from "./topics.js";
 import { messages } from "./messages.js";
@@ -29,6 +29,8 @@ export const notifications = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    // Prevents duplicate notifications for the same mention/event on a message
+    uniqueIndex("notifications_recipient_message_type_unique").on(t.recipientClerkId, t.messageId, t.type),
     index("notifications_recipient_idx").on(t.recipientClerkId),
     index("notifications_community_idx").on(t.communityId),
     index("notifications_read_at_idx").on(t.readAt),

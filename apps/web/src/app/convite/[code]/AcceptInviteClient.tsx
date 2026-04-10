@@ -11,7 +11,7 @@ interface InviteData {
     id: string;
     name: string;
     description: string | null;
-    ownerId: string;
+    // ownerId intentionally omitted — the API does not expose internal Clerk IDs
   };
   expiresAt: string | null;
   maxUses: number | null;

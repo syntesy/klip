@@ -83,12 +83,17 @@ export function useVoiceSession(topicId: string, userId: string, getToken: GetTo
   }, [room, topicId, getToken])
 
   const leaveSession = useCallback(async () => {
+    // Notify the API to decrement participantCount before disconnecting
+    try {
+      const headers = await authHeaders(getToken)
+      await fetch(`${API_URL}/api/topics/${topicId}/voice/leave`, { method: 'POST', headers })
+    } catch { /* best-effort — session end will reconcile the count anyway */ }
     await room.disconnect()
     setIsConnected(false)
     setIsHost(false)
     setSessionId(null)
     setParticipantCount(0)
-  }, [room])
+  }, [room, topicId, getToken])
 
   const toggleMute = useCallback(async () => {
     const next = !isMuted

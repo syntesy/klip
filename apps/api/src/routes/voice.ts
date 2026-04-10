@@ -181,6 +181,30 @@ export async function voiceRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // ── POST /api/topics/:topicId/voice/leave ────────────────────────────────────
+  fastify.post<{ Params: { topicId: string } }>(
+    "/topics/:topicId/voice/leave",
+    { preHandler: requireAuth },
+    async (req, reply) => {
+      const { topicId } = req.params;
+
+      const [session] = await db
+        .select()
+        .from(voiceSessions)
+        .where(and(eq(voiceSessions.topicId, topicId), eq(voiceSessions.status, "active")))
+        .limit(1);
+      if (!session) return reply.status(404).send({ error: "Nenhuma sessão ativa" });
+
+      // Decrement, floor at 0
+      await db
+        .update(voiceSessions)
+        .set({ participantCount: sql`GREATEST(${voiceSessions.participantCount} - 1, 0)` })
+        .where(eq(voiceSessions.id, session.id));
+
+      return { ok: true };
+    }
+  );
+
   // ── POST /api/topics/:topicId/voice/end ──────────────────────────────────────
   fastify.post<{ Params: { topicId: string } }>(
     "/topics/:topicId/voice/end",

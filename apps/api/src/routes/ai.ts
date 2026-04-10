@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import Anthropic from "@anthropic-ai/sdk";
 import { requireAuth } from "../plugins/auth.js";
 import { db } from "../lib/db.js";
+import { checkRateLimit, anthropicCircuitBreaker, sanitizeMarkdown } from "../lib/aiGuards.js";
 import { messages, topics, communityMembers, aiSummaries } from "@klip/db/schema";
 import { eq, and, asc, desc, inArray } from "drizzle-orm";
 import { z } from "zod";
@@ -13,93 +14,6 @@ const anthropic = new Anthropic({
 const summarySchema = z.object({
   topicId: z.string().uuid(),
 });
-
-// ─── Per-userId rate limiter ──────────────────────────────────────────────────
-// Simple in-memory limiter; single-instance Railway deployment makes this safe.
-// Max 3 AI summary requests per user per 60 seconds.
-
-const RATE_MAX = 3;
-const RATE_WINDOW_MS = 60_000;
-
-interface RateBucket {
-  count: number;
-  resetAt: number;
-}
-
-const rateBuckets = new Map<string, RateBucket>();
-
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now();
-  const bucket = rateBuckets.get(userId);
-
-  if (!bucket || bucket.resetAt <= now) {
-    rateBuckets.set(userId, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return true; // allowed
-  }
-
-  if (bucket.count >= RATE_MAX) return false; // blocked
-
-  bucket.count += 1;
-  return true; // allowed
-}
-
-// Periodically purge expired buckets to avoid unbounded memory growth
-setInterval(() => {
-  const now = Date.now();
-  for (const [id, bucket] of rateBuckets) {
-    if (bucket.resetAt <= now) rateBuckets.delete(id);
-  }
-}, 120_000).unref();
-
-// ─── Circuit breaker for Anthropic ───────────────────────────────────────────
-// Prevents cascading failures when Anthropic is down or over quota.
-// CLOSED → (N failures) → OPEN → (timeout) → HALF_OPEN → (success) → CLOSED
-//                                                        → (failure) → OPEN
-
-const CB_FAILURE_THRESHOLD = 5;    // open after 5 consecutive failures
-const CB_RESET_TIMEOUT_MS = 60_000; // try again after 60s
-
-type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
-
-const circuitBreaker = {
-  state: "CLOSED" as CircuitState,
-  failures: 0,
-  openedAt: 0,
-
-  isOpen(): boolean {
-    if (this.state === "CLOSED") return false;
-    if (this.state === "HALF_OPEN") return false;
-
-    // OPEN — check if cooldown has elapsed
-    if (Date.now() - this.openedAt >= CB_RESET_TIMEOUT_MS) {
-      this.state = "HALF_OPEN";
-      return false; // allow a probe request through
-    }
-    return true; // still open
-  },
-
-  onSuccess(): void {
-    this.failures = 0;
-    this.state = "CLOSED";
-  },
-
-  onFailure(): void {
-    this.failures += 1;
-    if (this.state === "HALF_OPEN" || this.failures >= CB_FAILURE_THRESHOLD) {
-      this.state = "OPEN";
-      this.openedAt = Date.now();
-    }
-  },
-};
-
-// ─── XSS sanitization ────────────────────────────────────────────────────────
-// Strip all HTML tags from AI-generated markdown. The AI should never produce
-// raw HTML; if it does (e.g. prompt-injected via message content), this
-// prevents script injection when the markdown is rendered in the browser.
-
-function sanitizeMarkdown(text: string): string {
-  return text.replace(/<[^>]+>/g, "");
-}
 
 export async function aiRoutes(fastify: FastifyInstance) {
   // List all summaries (as "decisions") across user's communities
@@ -255,7 +169,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
     }
 
     // Circuit breaker: fail fast when Anthropic is known to be unavailable
-    if (circuitBreaker.isOpen()) {
+    if (anthropicCircuitBreaker.isOpen()) {
       return reply.status(503).send({ error: "Serviço de IA temporariamente indisponível. Tente novamente em breve." });
     }
 
@@ -295,9 +209,9 @@ Seja conciso e objetivo. Use markdown.`,
       }
 
       rawContent = summaryContent.text;
-      circuitBreaker.onSuccess();
+      anthropicCircuitBreaker.onSuccess();
     } catch (err) {
-      circuitBreaker.onFailure();
+      anthropicCircuitBreaker.onFailure();
       fastify.log.error({ err }, "Anthropic API call failed");
       return reply.status(503).send({ error: "Falha ao contatar serviço de IA. Tente novamente." });
     }

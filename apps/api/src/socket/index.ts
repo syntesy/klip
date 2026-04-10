@@ -1,6 +1,6 @@
-import type { Server, Socket } from "socket.io";
+import type { Socket } from "socket.io";
 import { verifyToken } from "@clerk/backend";
-import { setIo } from "../lib/io.js";
+import { setIo, getIo, type KlipServer } from "../lib/io.js";
 import { db } from "../lib/db.js";
 import { messages, topics, communityMembers, notifications } from "@klip/db/schema";
 import type { Attachment } from "@klip/db/schema";
@@ -75,7 +75,6 @@ export interface SocketData {
 }
 
 type KlipSocket = Socket<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
-type KlipServer = Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
 
 // ─── Auth middleware ──────────────────────────────────────────────────────────
 
@@ -89,8 +88,9 @@ export function setupSocketAuth(io: KlipServer): void {
     }
 
     try {
+      // CLERK_SECRET_KEY is validated at startup in plugins/auth.ts — it exists here
       const payload = await verifyToken(token, {
-        secretKey: process.env.CLERK_SECRET_KEY ?? "",
+        secretKey: process.env.CLERK_SECRET_KEY!,
       });
       socket.data.userId = payload.sub;
       // Clerk token may include name via session claims; fallback to "Usuário"
@@ -144,22 +144,19 @@ setInterval(() => {
       typingState.delete(topicId);
     } else if (changed) {
       // Re-broadcast so clients clear the stale "X is typing" indicator
-      // io is not in scope here — we store a reference via module-level var
-      _io?.to(`topic:${topicId}`).emit(
-        "typing:update",
-        Array.from(users.values()).map(({ userId, name }) => ({ userId, name }))
-      );
+      try {
+        getIo().to(`topic:${topicId}`).emit(
+          "typing:update",
+          Array.from(users.values()).map(({ userId, name }) => ({ userId, name }))
+        );
+      } catch { /* io not yet initialized — interval fired too early, harmless */ }
     }
   }
-}, TYPING_CLEANUP_INTERVAL_MS).unref(); // unref so the interval doesn't keep the process alive
-
-// Module-level io reference for use inside the cleanup interval
-let _io: KlipServer | null = null;
+}, TYPING_CLEANUP_INTERVAL_MS).unref();
 
 // ─── Event handlers ───────────────────────────────────────────────────────────
 
 export function registerSocketHandlers(io: KlipServer): void {
-  _io = io;
   setIo(io);
   setupSocketAuth(io);
 

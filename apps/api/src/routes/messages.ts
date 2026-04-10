@@ -3,7 +3,7 @@ import { requireAuth } from "../plugins/auth.js";
 import { db } from "../lib/db.js";
 import { bulkGetClerkDisplayNames } from "../lib/clerkCache.js";
 import { messages, topics, communityMembers, messageReactions } from "@klip/db/schema";
-import { eq, and, asc, sql, isNull } from "drizzle-orm";
+import { eq, and, asc, desc, sql, isNull, lt } from "drizzle-orm";
 import { z } from "zod";
 
 const sendMessageSchema = z.object({
@@ -12,15 +12,16 @@ const sendMessageSchema = z.object({
 });
 
 export async function messagesRoutes(fastify: FastifyInstance) {
-  // Get messages for a topic
+  // Get messages for a topic — cursor-based pagination via `before` (messageId).
   // Soft-deleted messages are excluded from the response.
   // Author names are resolved from the communityMembers.displayName cache first,
   // and only fall back to a Clerk bulk-lookup for any that are missing.
-  fastify.get<{ Querystring: { topicId: string } }>(
+  fastify.get<{ Querystring: { topicId: string; before?: string; limit?: string } }>(
     "/",
     { preHandler: requireAuth },
     async (req, reply) => {
-      const { topicId } = req.query;
+      const { topicId, before } = req.query;
+      const pageSize = Math.min(Math.max(Number(req.query.limit ?? 50), 1), 100);
 
       if (!topicId) {
         return reply.status(400).send({ error: "topicId is required" });
@@ -52,20 +53,39 @@ export async function messagesRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ error: "Access denied" });
       }
 
-      // Fetch messages excluding soft-deleted ones
+      // Fetch messages excluding soft-deleted ones.
+      // `before` is a message UUID used as a cursor: returns the page of messages
+      // with createdAt strictly before that message, enabling infinite-scroll backwards.
+      // We fetch pageSize+1 to detect whether a previous page exists.
+      let beforeTimestamp: Date | undefined;
+      if (before) {
+        const [cursorMsg] = await db
+          .select({ createdAt: messages.createdAt })
+          .from(messages)
+          .where(eq(messages.id, before))
+          .limit(1);
+        if (cursorMsg) beforeTimestamp = cursorMsg.createdAt;
+      }
+
       const rows = await db
         .select()
         .from(messages)
         .where(
           and(
             eq(messages.topicId, topicId),
-            isNull(messages.deletedAt)   // ← exclude soft-deleted messages
+            isNull(messages.deletedAt),
+            beforeTimestamp ? lt(messages.createdAt, beforeTimestamp) : undefined
           )
         )
-        .orderBy(asc(messages.createdAt))
-        .limit(50);
+        .orderBy(before ? desc(messages.createdAt) : asc(messages.createdAt))
+        .limit(pageSize + 1); // fetch one extra to determine if there's a previous page
 
-      if (rows.length === 0) return [];
+      if (rows.length === 0) return { messages: [], hasPreviousPage: false, nextCursor: null };
+
+      const hasPreviousPage = rows.length > pageSize;
+      const page = hasPreviousPage ? rows.slice(0, pageSize) : rows;
+      // When paginating backwards (before cursor), results come newest-first; reverse for UI
+      if (before) page.reverse();
 
       // Resolve author names: prefer cached displayName from communityMembers,
       // only call Clerk for IDs not in the local cache.
@@ -81,17 +101,23 @@ export async function messagesRoutes(fastify: FastifyInstance) {
       );
 
       // For any author ID not in memberNameMap, fall back to Clerk bulk-lookup
-      const uniqueAuthorIds = [...new Set(rows.map((m) => m.authorId))];
+      const uniqueAuthorIds = [...new Set(page.map((m) => m.authorId))];
       const unknownIds = uniqueAuthorIds.filter((id) => !memberNameMap.has(id));
       if (unknownIds.length > 0) {
         const clerkNames = await bulkGetClerkDisplayNames(unknownIds);
         for (const [id, name] of clerkNames) memberNameMap.set(id, name);
       }
 
-      return rows.map((m) => ({
-        ...m,
-        authorName: memberNameMap.get(m.authorId) ?? m.authorId,
-      }));
+      return {
+        messages: page.map((m) => ({
+          ...m,
+          authorName: memberNameMap.get(m.authorId) ?? m.authorId,
+        })),
+        hasPreviousPage,
+        // nextCursor is the createdAt of the oldest message in this page,
+        // to be passed as `before` in the next request
+        nextCursor: hasPreviousPage ? page[0]?.id ?? null : null,
+      };
     }
   );
 

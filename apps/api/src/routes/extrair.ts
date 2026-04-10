@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import Anthropic from "@anthropic-ai/sdk";
 import { requireAuth } from "../plugins/auth.js";
 import { db } from "../lib/db.js";
+import { checkRateLimit, anthropicCircuitBreaker, sanitizeMarkdown } from "../lib/aiGuards.js";
 import {
   messages,
   topics,
@@ -10,7 +11,7 @@ import {
   inviteCardImpressions,
   type ContentIdea,
 } from "@klip/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, asc } from "drizzle-orm";
 import { z } from "zod";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -48,6 +49,11 @@ export async function extrairRoutes(fastify: FastifyInstance) {
 
   // ── POST /api/extrair ──────────────────────────────────────────────────────
   fastify.post("/", { preHandler: requireAuth }, async (req, reply) => {
+    // Per-userId rate limit — same budget as /api/ai/summary (3 req/min)
+    if (!checkRateLimit(req.userId)) {
+      return reply.status(429).send({ error: "Too many requests. Aguarde um momento." });
+    }
+
     const parsed = extractSchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: parsed.error.flatten() });
@@ -70,36 +76,53 @@ export async function extrairRoutes(fastify: FastifyInstance) {
       return reply.status(403).send({ error: "Apenas owners e moderadores podem extrair conteúdo" });
     }
 
-    // Fetch messages
-    const rows = await db
-      .select()
-      .from(messages)
-      .where(inArray(messages.id, messageIds));
-
-    if (rows.length === 0) {
-      return reply.status(404).send({ error: "Mensagens não encontradas" });
-    }
-
-    // Fetch topic for context
+    // Verify the topic exists AND belongs to the declared communityId.
+    // Without this check, an owner could pass their communityId alongside a
+    // topicId from a different community, bypassing the membership gate.
     const [topic] = await db
       .select()
       .from(topics)
       .where(eq(topics.id, topicId))
       .limit(1);
 
+    if (!topic) {
+      return reply.status(404).send({ error: "Tópico não encontrado" });
+    }
+
+    if (topic.communityId !== communityId) {
+      return reply.status(403).send({ error: "Tópico não pertence a esta comunidade" });
+    }
+
+    // Fetch messages — filter by BOTH messageId and topicId so that message
+    // UUIDs from other communities/topics cannot be injected into this context.
+    const rows = await db
+      .select()
+      .from(messages)
+      .where(and(inArray(messages.id, messageIds), eq(messages.topicId, topicId)))
+      .orderBy(asc(messages.createdAt));
+
+    if (rows.length === 0) {
+      return reply.status(404).send({ error: "Mensagens não encontradas" });
+    }
+
     const conversation = rows
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
       .map((m) => `[${m.authorId}]: ${m.content}`)
       .join("\n");
 
-    // Call Claude
-    const aiResponse = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1024,
-      messages: [
-        {
-          role: "user",
-          content: `Tópico: "${topic?.title ?? "Conversa"}"
+    // Fail fast if Anthropic is known to be unavailable
+    if (anthropicCircuitBreaker.isOpen()) {
+      return reply.status(503).send({ error: "Serviço de IA temporariamente indisponível. Tente novamente em breve." });
+    }
+
+    let aiResult: AiExtractResult;
+    try {
+      const aiResponse = await anthropic.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1024,
+        messages: [
+          {
+            role: "user",
+            content: `Tópico: "${topic.title}"
 
 Mensagens:
 ${conversation}
@@ -113,23 +136,34 @@ Voce e o Klip. Analise as mensagens e retorne APENAS JSON:
   ]
 }
 Maximo 4 content_ideas. Apenas JSON, sem markdown.`,
-        },
-      ],
-    });
+          },
+        ],
+      });
 
-    const rawText = aiResponse.content[0];
-    if (rawText?.type !== "text") {
-      return reply.status(500).send({ error: "Resposta inesperada da IA" });
-    }
+      const rawText = aiResponse.content[0];
+      if (rawText?.type !== "text") {
+        anthropicCircuitBreaker.onFailure();
+        return reply.status(500).send({ error: "Resposta inesperada da IA" });
+      }
 
-    let aiResult: AiExtractResult;
-    try {
       // Strip possible markdown fences
       const cleaned = rawText.text.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
       aiResult = JSON.parse(cleaned) as AiExtractResult;
-    } catch {
-      return reply.status(500).send({ error: "IA retornou JSON inválido" });
+      anthropicCircuitBreaker.onSuccess();
+    } catch (err) {
+      anthropicCircuitBreaker.onFailure();
+      fastify.log.error({ err }, "Anthropic API call failed in /api/extrair");
+      return reply.status(503).send({ error: "Falha ao contatar serviço de IA. Tente novamente." });
     }
+
+    // Sanitize AI output before storing — strip any HTML that could enable XSS
+    const sanitizedSummary = sanitizeMarkdown(aiResult.summary ?? "");
+    const sanitizedTitles = (aiResult.title_options ?? ["", "", ""]).map(sanitizeMarkdown) as [string, string, string];
+    const sanitizedIdeas = (aiResult.content_ideas ?? []).slice(0, 4).map((idea) => ({
+      ...idea,
+      title: sanitizeMarkdown(idea.title ?? ""),
+      description: sanitizeMarkdown(idea.description ?? ""),
+    }));
 
     // Save as draft
     const [draft] = await db
@@ -140,9 +174,9 @@ Maximo 4 content_ideas. Apenas JSON, sem markdown.`,
         createdBy: req.userId,
         inputType: "text",
         sourceMessageIds: messageIds,
-        title: aiResult.title_options[0] ?? "",
-        summary: aiResult.summary,
-        contentIdeas: (aiResult.content_ideas ?? []).slice(0, 4),
+        title: sanitizedTitles[0] ?? "",
+        summary: sanitizedSummary,
+        contentIdeas: sanitizedIdeas,
         accessLevel: "premium",
       })
       .returning();
@@ -150,7 +184,7 @@ Maximo 4 content_ideas. Apenas JSON, sem markdown.`,
     return reply.status(201).send({
       id: draft!.id,
       summary: draft!.summary,
-      titleOptions: aiResult.title_options,
+      titleOptions: sanitizedTitles,
       contentIdeas: draft!.contentIdeas,
     });
   });
