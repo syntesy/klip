@@ -1,0 +1,6 @@
+{
+  "buildCommand": "pnpm turbo build --filter=@klip/web",
+  "installCommand": "pnpm install",
+  "outputDirectory": ".next",
+  "framework": "nextjs"
+}
