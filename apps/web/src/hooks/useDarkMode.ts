@@ -6,8 +6,9 @@ type Theme = "light" | "dark";
 const STORAGE_KEY = "klip-theme";
 
 function getSystemTheme(): Theme {
-  if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  if (typeof window === "undefined") return "dark";
+  // Respect explicit OS dark preference; default to dark otherwise
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 
 function readStoredTheme(): Theme | null {
@@ -25,8 +26,8 @@ function applyTheme(theme: Theme) {
 }
 
 export function useDarkMode() {
-  // Start with null — resolved on mount to avoid SSR mismatch
-  const [theme, setTheme] = useState<Theme>("light");
+  // Start dark to avoid light flash before hydration
+  const [theme, setTheme] = useState<Theme>("dark");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

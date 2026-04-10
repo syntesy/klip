@@ -25,6 +25,14 @@ export default function RootLayout({
 }) {
   const body = (
     <html lang="pt-BR">
+      {/* Inline script runs before paint — prevents light flash on dark-default app */}
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var s=localStorage.getItem('klip-theme');if(s==='light'||s==='dark'){document.documentElement.setAttribute('data-theme',s);return;}if(window.matchMedia('(prefers-color-scheme: light)').matches){document.documentElement.setAttribute('data-theme','light');}else{document.documentElement.setAttribute('data-theme','dark');}}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`,
+          }}
+        />
+      </head>
       <body className={`${inter.className} bg-bg-page text-text-1 antialiased`}>
         {children}
       </body>

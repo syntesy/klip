@@ -185,8 +185,8 @@ export function TopicHeader({
           {/* Title + meta */}
           <div className="flex-1 min-w-0">
             <h1
-              className="text-[16px] font-bold text-text-1 truncate leading-none"
-              style={{ letterSpacing: "-0.2px" }}
+              className="text-[16px] text-text-1 truncate leading-none"
+              style={{ fontWeight: 700, letterSpacing: "-0.4px" }}
             >
               {topic.title}
             </h1>
@@ -209,19 +209,22 @@ export function TopicHeader({
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-[6px] shrink-0">
+          <div className="flex items-center gap-[4px] shrink-0">
+            {/* Icon-only ghost buttons */}
             <button
               type="button"
               onClick={onSearchOpen}
-              className="flex items-center justify-center w-[30px] h-[30px] rounded-[6px] text-text-3 border border-border bg-bg-surface hover:bg-bg-subtle hover:text-text-1 transition-colors"
+              className="flex items-center justify-center w-[30px] h-[30px] rounded-[6px] text-text-3 bg-transparent border-0 hover:bg-bg-subtle hover:text-text-1 transition-colors"
               title="Buscar mensagens"
             >
               <SearchIcon />
             </button>
+
+            {/* Text ghost buttons — secondary actions */}
             <button
               type="button"
               onClick={onMarkDecision}
-              className="hidden md:flex items-center gap-[5px] text-[12px] font-medium text-text-2 px-[13px] py-[6px] rounded-[6px] border border-border bg-bg-surface hover:bg-bg-subtle hover:border-[var(--color-border-mid)] hover:text-text-1 transition-colors leading-none"
+              className="hidden md:flex items-center gap-[5px] text-[12px] font-medium text-text-3 px-[10px] py-[6px] rounded-[6px] bg-transparent border-0 hover:bg-bg-subtle hover:text-text-1 transition-colors leading-none"
             >
               <DecisionIcon />
               Decisões
@@ -229,37 +232,42 @@ export function TopicHeader({
             <button
               type="button"
               onClick={onRequestSummary}
-              className="hidden md:flex items-center gap-[5px] text-[12px] font-medium text-text-2 px-[13px] py-[6px] rounded-[6px] border border-border bg-bg-surface hover:bg-bg-subtle hover:border-[var(--color-border-mid)] hover:text-text-1 transition-colors leading-none"
+              className="hidden md:flex items-center gap-[5px] text-[12px] font-medium text-text-3 px-[10px] py-[6px] rounded-[6px] bg-transparent border-0 hover:bg-bg-subtle hover:text-text-1 transition-colors leading-none"
             >
               <SummaryIcon />
               Resumo IA
             </button>
+
+            {/* CTA primário */}
             <button
               type="button"
               onClick={onNewTopic}
-              className="flex items-center gap-[5px] text-[12px] font-semibold text-white px-[14px] py-[6px] rounded-[6px] bg-blue hover:opacity-90 transition-all leading-none"
+              className="flex items-center gap-[5px] text-[12px] font-semibold text-white px-[14px] py-[6px] rounded-[6px] bg-blue border-0 transition-all leading-none hover:shadow-[0_3px_10px_rgba(18,73,160,.4)]"
               style={{ boxShadow: "0 2px 6px rgba(18,73,160,.3)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 3px 10px rgba(18,73,160,.4)")}
-              onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 2px 6px rgba(18,73,160,.3)")}
             >
               <PlusIcon />
               Novo tópico
             </button>
-              {isHost && (
-                <button
-                  type="button"
-                  onClick={activeVoiceSession ? onEndVoice : onStartVoice}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '6px 12px', borderRadius: 6, fontSize: 12,
-                    background: activeVoiceSession ? 'rgba(239,68,68,.2)' : 'rgba(255,255,255,.08)',
-                    border: activeVoiceSession ? '1px solid rgba(239,68,68,.4)' : '1px solid rgba(255,255,255,.15)',
-                    color: activeVoiceSession ? '#ef4444' : '#F0F4FA', cursor: 'pointer',
-                  }}
-                >
-                  {activeVoiceSession ? '�� Encerrar' : '🎙️ Ao vivo'}
-                </button>
-              )}
+
+            {/* Botão de voz — usa variáveis de tema */}
+            {isHost && (
+              <button
+                type="button"
+                onClick={activeVoiceSession ? onEndVoice : onStartVoice}
+                className="flex items-center gap-[5px] text-[12px] font-medium px-[10px] py-[6px] rounded-[6px] transition-colors leading-none border"
+                style={activeVoiceSession ? {
+                  background: "var(--color-danger-dim)",
+                  borderColor: "var(--color-danger-border)",
+                  color: "#ef4444",
+                } : {
+                  background: "var(--color-bg-subtle)",
+                  borderColor: "var(--color-border)",
+                  color: "var(--color-text-2)",
+                }}
+              >
+                {activeVoiceSession ? '⏹ Encerrar' : '🎙️ Ao vivo'}
+              </button>
+            )}
           </div>
         </>
       )}
@@ -275,7 +283,10 @@ export function TopicHeader({
         }}
         onClick={onScrollToPin}
       >
-        <span style={{ fontSize: 14, flexShrink: 0 }}>📌</span>
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true" style={{ color: "var(--color-blue-bright)", flexShrink: 0 }}>
+          <path d="M9 2l5 5-6 6-1-3-4 4-1-1 4-4-3-1z" />
+          <path d="M2 14l3-3" strokeLinecap="round" />
+        </svg>
         <span className="text-text-3 shrink-0 font-medium">
           {pinnedMessage.authorName}:
         </span>

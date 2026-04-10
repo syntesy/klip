@@ -351,16 +351,15 @@ function ReplyQuote({ authorName, content }: { authorName: string; content: stri
 
 const EMOJI_PALETTE = ["👍", "❤️", "🔥", "✅", "😂", "🤔"] as const;
 
-const BAR_BG = "#1A2438";
-const BAR_BORDER = "1px solid rgba(255,255,255,.12)";
-const BAR_SHADOW = "0 2px 8px rgba(0,0,0,.4)";
-
 /** Small emoji picker that floats above the hover bar */
-function EmojiPopover({ onPick }: { onPick: (e: string) => void }) {
+function EmojiPopover({ onPick, isDark }: { onPick: (e: string) => void; isDark: boolean }) {
+  const bg = isDark ? "#1A2438" : "#FFFFFF";
+  const border = isDark ? "1px solid rgba(255,255,255,.12)" : "1px solid #DDE3EE";
+  const shadow = isDark ? "0 2px 8px rgba(0,0,0,.4)" : "0 2px 12px rgba(0,0,0,.12)";
   return (
     <div
       className="absolute bottom-full right-0 mb-1 z-50 flex gap-[6px] px-2 py-2 rounded-[10px]"
-      style={{ background: BAR_BG, border: BAR_BORDER, boxShadow: BAR_SHADOW }}
+      style={{ background: bg, border, boxShadow: shadow }}
     >
       {EMOJI_PALETTE.map((emoji) => (
         <button
@@ -452,6 +451,7 @@ function MessageHoverBar({
   canExtrair,
   onReactionsChange,
   onPin,
+  isDark,
 }: {
   msg: Message;
   onKlip?: () => void;
@@ -460,9 +460,16 @@ function MessageHoverBar({
   canExtrair?: boolean;
   onReactionsChange?: (messageId: string, next: Reaction[]) => void;
   onPin?: (msg: Message) => void;
+  isDark: boolean;
 }) {
   const { getToken } = useAuth();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const barBg = isDark ? "#1A2438" : "#FFFFFF";
+  const barBorder = isDark ? "1px solid rgba(255,255,255,.12)" : "1px solid #DDE3EE";
+  const barShadow = isDark ? "0 2px 8px rgba(0,0,0,.4)" : "0 2px 12px rgba(0,0,0,.12)";
+  const btnColor = isDark ? "#7A90A8" : "#8A96A8";
+  const btnHoverColor = isDark ? "#F0F4FA" : "#0F1923";
+  const sepColor = isDark ? "rgba(255,255,255,.12)" : "#DDE3EE";
 
   const handleReact = useCallback(async (emoji: string) => {
     setPickerOpen(false);
@@ -490,7 +497,7 @@ function MessageHoverBar({
   }, [msg, getToken, onReactionsChange]);
 
   const btnStyle: React.CSSProperties = {
-    color: "#7A90A8",
+    color: btnColor,
     background: "transparent",
     border: "none",
     padding: "0 6px",
@@ -508,7 +515,7 @@ function MessageHoverBar({
     >
       <div
         className="flex items-center gap-0"
-        style={{ background: BAR_BG, border: BAR_BORDER, borderRadius: 8, padding: "4px 8px", boxShadow: BAR_SHADOW }}
+        style={{ background: barBg, border: barBorder, borderRadius: 8, padding: "4px 8px", boxShadow: barShadow }}
       >
         {/* Emoji icon — opens picker */}
         <div className="relative flex items-center">
@@ -518,8 +525,8 @@ function MessageHoverBar({
             onMouseDown={(e) => { e.preventDefault(); setPickerOpen((o) => !o); }}
             className="flex items-center justify-center transition-colors"
             style={{ ...btnStyle, padding: "0 4px" }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#F0F4FA"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#7A90A8"; }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = btnHoverColor; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = btnColor; }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3" />
@@ -529,20 +536,20 @@ function MessageHoverBar({
             </svg>
           </button>
           {pickerOpen && (
-            <EmojiPopover onPick={(emoji) => void handleReact(emoji)} />
+            <EmojiPopover onPick={(emoji) => void handleReact(emoji)} isDark={isDark} />
           )}
         </div>
 
         {/* Separator */}
-        <span style={{ width: 1, height: 14, background: "rgba(255,255,255,.12)", margin: "0 6px", display: "inline-block", flexShrink: 0 }} />
+        <span style={{ width: 1, height: 14, background: sepColor, margin: "0 6px", display: "inline-block", flexShrink: 0 }} />
 
         {onReply && (
           <button
             type="button"
             onClick={onReply}
             style={btnStyle}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#F0F4FA"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#7A90A8"; }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = btnHoverColor; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = btnColor; }}
           >
             Responder
           </button>
@@ -553,9 +560,9 @@ function MessageHoverBar({
             type="button"
             onClick={onKlip}
             disabled={msg.isKlipped}
-            style={{ ...btnStyle, color: msg.isKlipped ? "#4CAF50" : "#7A90A8", opacity: msg.isKlipped ? 0.6 : 1 }}
-            onMouseEnter={(e) => { if (!msg.isKlipped) (e.currentTarget as HTMLButtonElement).style.color = "#4CAF50"; }}
-            onMouseLeave={(e) => { if (!msg.isKlipped) (e.currentTarget as HTMLButtonElement).style.color = "#7A90A8"; }}
+            style={{ ...btnStyle, color: msg.isKlipped ? "#22C98A" : btnColor, opacity: msg.isKlipped ? 0.6 : 1 }}
+            onMouseEnter={(e) => { if (!msg.isKlipped) (e.currentTarget as HTMLButtonElement).style.color = "#22C98A"; }}
+            onMouseLeave={(e) => { if (!msg.isKlipped) (e.currentTarget as HTMLButtonElement).style.color = btnColor; }}
           >
             {msg.isKlipped ? "Klipado" : "Klipar"}
           </button>
@@ -567,10 +574,13 @@ function MessageHoverBar({
             onClick={() => onPin(msg)}
             style={btnStyle}
             title="Fixar mensagem"
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#F0C040"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#7A90A8"; }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#4A9EFF"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = btnColor; }}
           >
-            📌
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
+              <path d="M9 2l5 5-6 6-1-3-4 4-1-1 4-4-3-1z" />
+              <path d="M2 14l3-3" strokeLinecap="round" />
+            </svg>
           </button>
         )}
 
@@ -580,7 +590,7 @@ function MessageHoverBar({
             onClick={onExtrair}
             style={btnStyle}
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#4A9EFF"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#7A90A8"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = btnColor; }}
           >
             ✦ Extrair
           </button>
@@ -628,6 +638,8 @@ function MessageRow({
   onPin?: (msg: Message) => void;
   isHighlighted?: boolean;
 }) {
+  const { theme, mounted } = useDarkMode();
+  const isDark = mounted ? theme === "dark" : true; // default dark to match app default
   // Soft-deleted message
   if (msg.deletedAt !== null) {
     return (
@@ -704,6 +716,7 @@ function MessageRow({
 
       <MessageHoverBar
         msg={msg}
+        isDark={isDark}
         {...(onKlip ? { onKlip: () => onKlip(msg.id) } : {})}
         {...(onReply ? { onReply: () => onReply(msg) } : {})}
         {...(onExtrair ? { onExtrair: () => onExtrair(msg) } : {})}

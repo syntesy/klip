@@ -113,7 +113,7 @@ function NavBadge({ count }: { count: number }) {
 
 function NavMenu({ pathname }: { pathname: string }) {
   return (
-    <div className="px-2 pt-[14px] pb-1 shrink-0">
+    <div className="px-3 pt-[14px] pb-1 shrink-0">
       <p className="text-[10px] font-semibold text-text-3 uppercase tracking-[0.1em] px-[10px] mb-[5px]">
         Menu
       </p>
@@ -150,7 +150,7 @@ function CommunityAvatar({ community }: { community: Community }) {
   const { bg, color } = getAvatarColors(community.id, isDark);
   return (
     <div
-      className="w-[25px] h-[25px] rounded-[7px] flex items-center justify-center text-[10px] font-semibold shrink-0 leading-none"
+      className="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center text-[10px] font-semibold shrink-0 leading-none"
       style={{ backgroundColor: bg, color }}
       aria-hidden="true"
     >
@@ -167,7 +167,7 @@ function CommunityList({
   pathname: string;
 }) {
   return (
-    <div className="flex-1 overflow-y-auto scrollbar-thin px-2 pb-2 pt-1">
+    <div className="flex-1 overflow-y-auto scrollbar-thin px-3 pb-2 pt-1">
       <p className="text-[10px] font-semibold text-text-3 uppercase tracking-[0.1em] px-[10px] pt-[6px] pb-[8px]">
         Comunidades
       </p>
@@ -187,7 +187,7 @@ function CommunityList({
                 href={`/communities/${community.id}`}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-2 px-[10px] py-[5px] rounded-[7px] text-[13px] mb-[1px] no-underline",
+                  "flex items-center gap-[10px] px-[10px] py-[5px] rounded-[7px] text-[13px] mb-[1px] no-underline",
                   "transition-colors duration-[120ms]",
                   active
                     ? "font-semibold text-text-1 bg-bg-surface shadow-[0_1px_4px_rgba(0,0,0,.07)]"
@@ -264,12 +264,14 @@ function UserFooterWithClerk() {
         )}
       </div>
 
-      {/* Name + plan */}
+      {/* Name + email */}
       <div className="flex-1 min-w-0">
         <p className="text-[12px] font-medium text-text-1 truncate leading-[1.3]">
           {displayName}
         </p>
-        <p className="text-[11px] text-text-3 leading-[1.3]">Plano Pro</p>
+        <p className="text-[11px] text-text-3 leading-[1.3] truncate">
+          {user?.primaryEmailAddress?.emailAddress ?? ""}
+        </p>
       </div>
 
       {/* Dark mode toggle */}
@@ -350,7 +352,7 @@ export function Sidebar({ communities, isOpen = true }: SidebarProps) {
       <nav
         aria-label="Navegação principal"
         className={cn(
-          "w-[220px] min-w-[220px] max-w-[220px] h-screen",
+          "w-[240px] min-w-[240px] max-w-[240px] h-screen",
           "flex flex-col bg-sidebar overflow-hidden shrink-0",
           "border-r border-[var(--color-sidebar-border)]",
           // Mobile: fixed + slide

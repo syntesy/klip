@@ -110,19 +110,31 @@ function ToolbarButton({ icon, label, onClick, variant = "default", disabled = f
   const isKlip = variant === "klip";
   const isDanger = variant === "danger";
 
-  let inlineStyle: React.CSSProperties | undefined;
+  let inlineStyle: React.CSSProperties;
   if (isKlip) {
     inlineStyle = {
-      border: "1px solid var(--color-green-border)",
-      background: "var(--color-green-dim)",
-      color: "var(--color-green)",
+      background: "transparent",
+      border: "none",
+      color: "#22C98A",
       fontWeight: 600,
     };
-  } else if (!isDanger && !active) {
+  } else if (isDanger) {
     inlineStyle = {
-      border: "1px solid var(--color-btn-neutral-border)",
-      background: "var(--color-btn-neutral-bg)",
-      color: "var(--color-btn-neutral-color)",
+      background: "transparent",
+      border: "none",
+      color: "#ef4444",
+    };
+  } else if (active) {
+    inlineStyle = {
+      background: "rgba(74,158,255,.12)",
+      border: "none",
+      color: "#4A9EFF",
+    };
+  } else {
+    inlineStyle = {
+      background: "transparent",
+      border: "none",
+      color: "#6B8BAF",
     };
   }
 
@@ -135,9 +147,9 @@ function ToolbarButton({ icon, label, onClick, variant = "default", disabled = f
         "inline-flex items-center gap-[5px] text-[11px] font-medium",
         "px-[8px] py-[4px] rounded-[6px] transition-colors leading-none",
         "disabled:opacity-40 disabled:cursor-not-allowed",
-        isDanger && "text-red-500 border border-red-200 bg-red-50",
-        active && !isKlip && !isDanger && "text-blue bg-blue/10 border border-blue/30",
-        !isKlip && !isDanger && !active && "hover:opacity-80"
+        isKlip && "hover:bg-[rgba(34,201,138,.08)]",
+        isDanger && "hover:bg-[rgba(239,68,68,.08)]",
+        !isKlip && !isDanger && "hover:bg-[rgba(255,255,255,.06)]",
       )}
       style={inlineStyle}
     >
@@ -704,11 +716,11 @@ export function InputArea({
           type="button"
           onClick={handleImageButtonClick}
           disabled={disabled || recording}
-          className="inline-flex items-center gap-[4px] text-[11px] font-semibold px-[11px] py-[5px] rounded-[6px] transition-colors leading-none disabled:opacity-40 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-[4px] text-[11px] font-medium px-[8px] py-[4px] rounded-[6px] transition-colors leading-none disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[rgba(255,255,255,.06)]"
           style={{
-            color: "var(--color-blue-bright)",
-            border: "1px solid var(--color-blue-border)",
-            background: "var(--color-blue-dim)",
+            color: "#6B8BAF",
+            border: "none",
+            background: "transparent",
           }}
         >
           <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
@@ -733,15 +745,15 @@ export function InputArea({
           type="button"
           onClick={handleMicButton}
           disabled={disabled}
-          className="inline-flex items-center gap-[4px] text-[11px] font-semibold px-[11px] py-[5px] rounded-[6px] transition-colors leading-none disabled:opacity-40 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-[4px] text-[11px] font-medium px-[8px] py-[4px] rounded-[6px] transition-colors leading-none disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[rgba(255,255,255,.06)]"
           style={recording ? {
-            color: "var(--color-text-3)",
-            border: "1px solid var(--color-danger-border)",
-            background: "var(--color-danger-dim)",
+            color: "#ef4444",
+            border: "none",
+            background: "rgba(239,68,68,.08)",
           } : {
-            color: "var(--color-blue-bright)",
-            border: "1px solid var(--color-blue-border)",
-            background: "var(--color-blue-dim)",
+            color: "#6B8BAF",
+            border: "none",
+            background: "transparent",
           }}
         >
           {recording ? <StopIcon /> : (

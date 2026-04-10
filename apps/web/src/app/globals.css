@@ -16,8 +16,8 @@
     /* Backgrounds */
     --color-bg-page:    #F0F4FA;
     --color-bg-surface: #FFFFFF;
-    --color-bg-subtle:  #EEF1F7;
-    --color-bg-muted:   #E4E9F2;
+    --color-bg-subtle:  #E2E8F3;
+    --color-bg-muted:   #D6DFF0;
     --color-sidebar:    #E8EDF5;
     --color-sidebar-hover:  #DDE3EF;
     --color-sidebar-border: #D0D8EC;
@@ -137,34 +137,6 @@
   }
 }
 
-/* ── Input area always renders in light palette ──────────────────────────────
-   Applied to the InputArea container regardless of [data-theme].
-   CSS variable scope: children of .input-area-light inherit light values.     */
-.input-area-light {
-  --color-bg-surface:         #FFFFFF;
-  --color-bg-subtle:          #F0F4FA;
-  --color-border:             #DDE3EE;
-  --color-border-mid:         #C8D0E0;
-  --color-text-1:             #0F1923;
-  --color-text-2:             #4A5568;
-  --color-text-3:             #8A96A8;
-  --color-blue:               #1249A0;
-  --color-blue-bright:        #1249A0;
-  --color-blue-dim:           rgba(18,73,160,.07);
-  --color-blue-dim2:          rgba(18,73,160,.04);
-  --color-blue-border:        rgba(18,73,160,.18);
-  --color-blue-glow:          rgba(18,73,160,.10);
-  --color-green:              #0D9B6A;
-  --color-green-dim:          rgba(13,155,106,.08);
-  --color-green-border:       rgba(13,155,106,.22);
-  --color-input-bg:           #F0F4FA;
-  --color-input-bg-focus:     #FFFFFF;
-  --color-input-border:       #DDE3EE;
-  --color-input-border-focus: #1249A0;
-  --color-btn-neutral-bg:     transparent;
-  --color-btn-neutral-border: #DDE3EE;
-  --color-btn-neutral-color:  #4A5568;
-}
 
 /* ── Sidebar dark mode contrast ──────────────────────────────────────────────
    Scoped to the sidebar nav so other components are unaffected.

@@ -21,12 +21,12 @@ import { voiceRoutes } from "./routes/voice.js";
 import multipart from "@fastify/multipart";
 import { registerSocketHandlers } from "./socket/index.js";
 
-const PORT = Number(process.env.API_PORT ?? 3001);
+const PORT = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
 
 // Dev web runs on 3002; keep 3000 as fallback
 const WEB_ORIGINS =
   process.env.NODE_ENV === "production"
-    ? ["https://klip.app"]
+    ? [process.env.WEB_URL ?? "https://klip.app"]
     : [process.env.WEB_URL ?? "http://localhost:3002", "http://localhost:3000"];
 
 const fastify = Fastify({
