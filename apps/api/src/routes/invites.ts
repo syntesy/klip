@@ -74,15 +74,21 @@ export async function invitesRoutes(fastify: FastifyInstance) {
       code = generateCode(8);
     }
 
-    // Check if an active invite with this slug already exists; reuse it if so
+    // Check if a still-valid invite with this slug already exists; reuse it if so.
+    // An expired or exhausted invite is not reused — a new one is created instead.
     const [existingSlugInvite] = await db
       .select()
       .from(invites)
       .where(eq(invites.slug, community.slug))
       .limit(1);
 
-    if (existingSlugInvite) {
-      // Reuse the existing slug-based invite
+    const now = new Date();
+    const isValid =
+      existingSlugInvite &&
+      (!existingSlugInvite.expiresAt || existingSlugInvite.expiresAt > now) &&
+      (existingSlugInvite.maxUses === null || existingSlugInvite.useCount < existingSlugInvite.maxUses);
+
+    if (isValid) {
       return reply.status(201).send({
         code: existingSlugInvite.code,
         slug: existingSlugInvite.slug,

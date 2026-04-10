@@ -3,7 +3,7 @@ import { requireAuth } from "../plugins/auth.js";
 import { db } from "../lib/db.js";
 import { bulkGetClerkDisplayNames } from "../lib/clerkCache.js";
 import { messages, topics, communityMembers, messageReactions } from "@klip/db/schema";
-import { eq, and, asc, desc, sql, isNull, lt, isNotNull } from "drizzle-orm";
+import { eq, and, asc, desc, sql, isNull, lt } from "drizzle-orm";
 import { z } from "zod";
 
 const sendMessageSchema = z.object({
@@ -223,6 +223,59 @@ export async function messagesRoutes(fastify: FastifyInstance) {
 
     return reply.status(201).send(message);
   });
+
+  // Soft-delete a message — author can delete their own; owner/moderator can delete any.
+  // Emits "message:deleted" to the topic room so clients remove it immediately.
+  fastify.delete<{ Params: { id: string } }>(
+    "/:id",
+    { preHandler: requireAuth },
+    async (req, reply) => {
+      const [message] = await db
+        .select({ id: messages.id, authorId: messages.authorId, topicId: messages.topicId, deletedAt: messages.deletedAt })
+        .from(messages)
+        .where(eq(messages.id, req.params.id))
+        .limit(1);
+
+      if (!message) return reply.status(404).send({ error: "Message not found" });
+      if (message.deletedAt) return reply.status(410).send({ error: "Message already deleted" });
+
+      const [topic] = await db
+        .select({ communityId: topics.communityId })
+        .from(topics)
+        .where(eq(topics.id, message.topicId))
+        .limit(1);
+      if (!topic) return reply.status(404).send({ error: "Topic not found" });
+
+      const [member] = await db
+        .select({ role: communityMembers.role })
+        .from(communityMembers)
+        .where(and(eq(communityMembers.communityId, topic.communityId), eq(communityMembers.userId, req.userId)))
+        .limit(1);
+
+      if (!member) return reply.status(403).send({ error: "Access denied" });
+
+      // Authors can delete their own messages; owner/moderator can delete any
+      const canDelete =
+        message.authorId === req.userId ||
+        member.role === "owner" ||
+        member.role === "moderator";
+
+      if (!canDelete) return reply.status(403).send({ error: "Cannot delete another user's message" });
+
+      await db
+        .update(messages)
+        .set({ deletedAt: new Date() })
+        .where(eq(messages.id, req.params.id));
+
+      // Notify room so clients remove the message without a page refresh
+      try {
+        const { getIo } = await import("../lib/io.js");
+        getIo().to(`topic:${message.topicId}`).emit("message:deleted", req.params.id);
+      } catch { /* io not yet initialized — harmless in test environments */ }
+
+      return reply.status(204).send();
+    }
+  );
 
   // Add reaction — requires membership of the community that owns the message
   fastify.post<{ Params: { id: string }; Body: { emoji: string } }>(

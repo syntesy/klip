@@ -12,6 +12,12 @@ const createTopicSchema = z.object({
   description: z.string().max(1000).optional(),
 });
 
+const pinMessageSchema = z.object({
+  messageId: z.string().uuid(),
+  content: z.string().max(2000).optional(),
+  authorName: z.string().max(200).optional(),
+});
+
 export async function topicsRoutes(fastify: FastifyInstance) {
   // List topics for a community
   fastify.get<{ Querystring: { communityId: string } }>(
@@ -119,12 +125,15 @@ export async function topicsRoutes(fastify: FastifyInstance) {
   });
 
   // Pin a message to a topic — owner/moderator only
-  fastify.post<{ Params: { id: string }; Body: { messageId: string; content: string; authorName: string } }>(
+  fastify.post<{ Params: { id: string }; Body: { messageId: string; content?: string; authorName?: string } }>(
     "/:id/pin",
     { preHandler: requireAuth },
     async (req, reply) => {
-      const { messageId, content, authorName } = req.body ?? {};
-      if (!messageId) return reply.status(400).send({ error: "messageId required" });
+      const pinParsed = pinMessageSchema.safeParse(req.body);
+      if (!pinParsed.success) {
+        return reply.status(400).send({ error: pinParsed.error.flatten() });
+      }
+      const { messageId, content, authorName } = pinParsed.data;
 
       const [topic] = await db
         .select()

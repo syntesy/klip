@@ -82,7 +82,7 @@ await fastify.register(aiRoutes, { prefix: "/api/ai" });
 await fastify.register(invitesRoutes, { prefix: "/api/invites" });
 await fastify.register(uploadsRoutes, { prefix: "/api/uploads" });
 await fastify.register(extrairRoutes, { prefix: "/api/extrair" });
-  await fastify.register(voiceRoutes, { prefix: "/api" });
+await fastify.register(voiceRoutes, { prefix: "/api" });
 
 // Health check
 fastify.get("/health", async () => ({ status: "ok", timestamp: new Date().toISOString() }));

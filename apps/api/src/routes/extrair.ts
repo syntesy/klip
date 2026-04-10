@@ -140,17 +140,26 @@ Maximo 4 content_ideas. Apenas JSON, sem markdown.`,
         ],
       });
 
+      anthropicCircuitBreaker.onSuccess();
+
       const rawText = aiResponse.content[0];
       if (rawText?.type !== "text") {
-        anthropicCircuitBreaker.onFailure();
+        // Successful HTTP response but unexpected content shape — don't trip the CB
+        fastify.log.error({ content: aiResponse.content }, "Unexpected Anthropic response shape in /api/extrair");
         return reply.status(500).send({ error: "Resposta inesperada da IA" });
       }
 
       // Strip possible markdown fences
       const cleaned = rawText.text.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
-      aiResult = JSON.parse(cleaned) as AiExtractResult;
-      anthropicCircuitBreaker.onSuccess();
+      try {
+        aiResult = JSON.parse(cleaned) as AiExtractResult;
+      } catch {
+        // JSON parse failure is a format error from AI, not an Anthropic outage — don't trip CB
+        fastify.log.error({ cleaned }, "Failed to parse Anthropic JSON response in /api/extrair");
+        return reply.status(500).send({ error: "Resposta inesperada da IA" });
+      }
     } catch (err) {
+      // Only network/auth errors reach here — these indicate Anthropic is down
       anthropicCircuitBreaker.onFailure();
       fastify.log.error({ err }, "Anthropic API call failed in /api/extrair");
       return reply.status(503).send({ error: "Falha ao contatar serviço de IA. Tente novamente." });

@@ -85,7 +85,9 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
       // Audio/webm may be detected as video/webm by file-type (same container)
       const normalised = detectedMime === "video/webm" ? "audio/webm" : detectedMime;
 
-      if (!normalised || (normalised !== mimeType && !ALLOWED_IMAGE_TYPES.has(normalised) && !ALLOWED_AUDIO_TYPES.has(normalised))) {
+      // Strict match: the detected MIME must equal the declared MIME exactly.
+      // Allowing "in allowed set but different" would let audio pass as image (or vice versa).
+      if (!normalised || normalised !== mimeType) {
         return reply.status(415).send({
           error: "File content does not match the declared type. Upload rejected.",
         });
@@ -96,7 +98,10 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
       const folder = isImage ? "images" : "audio";
       const storagePath = `${folder}/${req.userId}/${randomUUID()}.${ext}`;
 
-      const { error: uploadError } = await getSupabase().storage
+      // Reuse a single Supabase client for both upload and publicUrl operations
+      const supabase = getSupabase();
+
+      const { error: uploadError } = await supabase.storage
         .from(BUCKET)
         .upload(storagePath, buffer, {
           contentType: mimeType,
@@ -110,7 +115,7 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
 
       const {
         data: { publicUrl },
-      } = getSupabase().storage.from(BUCKET).getPublicUrl(storagePath);
+      } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
 
       const attachment: Omit<Attachment, "duration"> = {
         type: isImage ? "image" : "audio",

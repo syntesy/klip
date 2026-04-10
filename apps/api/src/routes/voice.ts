@@ -6,6 +6,11 @@ import { db } from "../lib/db.js";
 import { getIo } from "../lib/io.js";
 import { voiceSessions, communityMembers, topics } from "@klip/db/schema";
 import { eq, and, sql } from "drizzle-orm";
+import { z } from "zod";
+
+const grantSpeakSchema = z.object({
+  participantIdentity: z.string().min(1),
+});
 
 const livekitUrl = process.env.LIVEKIT_URL ?? "";
 const apiKey = process.env.LIVEKIT_API_KEY ?? "";
@@ -158,7 +163,12 @@ export async function voiceRoutes(fastify: FastifyInstance) {
     { preHandler: requireAuth },
     async (req, reply) => {
       const { sessionId } = req.params;
-      const { participantIdentity } = req.body as { participantIdentity: string };
+
+      const parsed = grantSpeakSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return reply.status(400).send({ error: parsed.error.flatten() });
+      }
+      const { participantIdentity } = parsed.data;
 
       const [session] = await db
         .select()
@@ -187,6 +197,17 @@ export async function voiceRoutes(fastify: FastifyInstance) {
     { preHandler: requireAuth },
     async (req, reply) => {
       const { topicId } = req.params;
+
+      // Verify community membership before allowing participant count changes
+      const [topic] = await db.select({ communityId: topics.communityId }).from(topics).where(eq(topics.id, topicId)).limit(1);
+      if (!topic) return reply.status(404).send({ error: "Topic not found" });
+
+      const [member] = await db
+        .select({ id: communityMembers.id })
+        .from(communityMembers)
+        .where(and(eq(communityMembers.communityId, topic.communityId), eq(communityMembers.userId, req.userId)))
+        .limit(1);
+      if (!member) return reply.status(403).send({ error: "Access denied" });
 
       const [session] = await db
         .select()
