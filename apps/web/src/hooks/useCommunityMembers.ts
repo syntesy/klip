@@ -7,7 +7,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 export interface CommunityMember {
   userId: string;
   role: "owner" | "moderator" | "member";
-  name?: string;
+  displayName: string | null;
 }
 
 export function useCommunityMembers(

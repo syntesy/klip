@@ -42,7 +42,7 @@ const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25 MB
 export async function uploadsRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/",
-    { preHandler: requireAuth },
+    { preHandler: requireAuth, config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
     async (req, reply) => {
       // @fastify/multipart must be registered on the instance
       const part = await req.file();

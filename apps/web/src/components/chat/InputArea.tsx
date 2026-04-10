@@ -316,9 +316,10 @@ export function InputArea({
   const [mentionStart, setMentionStart] = useState(0); // cursor position of the @
   const members = useCommunityMembers(communityId, getToken);
   const mentionItems = mentionQuery === null ? [] : members
+    .filter((m) => m.displayName)
     .map((m) => ({
       userId: m.userId,
-      label: m.userId.slice(0, 20), // fallback to clerkId prefix until we have names
+      label: m.displayName as string,
     }))
     .filter((m) =>
       mentionQuery === "" || m.label.toLowerCase().startsWith(mentionQuery.toLowerCase())

@@ -96,10 +96,11 @@ export function useVoiceSession(topicId: string, userId: string, getToken: GetTo
   }, [room, topicId, getToken])
 
   const toggleMute = useCallback(async () => {
-    const next = !isMuted
-    await room.localParticipant.setMicrophoneEnabled(!next)
-    setIsMuted(next)
-  }, [room, isMuted])
+    // Read the actual hardware state rather than React state to avoid stale-closure race
+    const currentlyEnabled = room.localParticipant.isMicrophoneEnabled
+    await room.localParticipant.setMicrophoneEnabled(!currentlyEnabled)
+    setIsMuted(currentlyEnabled) // after toggle: muted = was previously enabled
+  }, [room])
 
   const raiseHand = useCallback(async (userName: string) => {
     if (!sessionId) return

@@ -108,6 +108,7 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
           userId: communityMembers.userId,
           role: communityMembers.role,
           joinedAt: communityMembers.joinedAt,
+          displayName: communityMembers.displayName,
         })
         .from(communityMembers)
         .where(eq(communityMembers.communityId, req.params.id));

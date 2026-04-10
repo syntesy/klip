@@ -11,7 +11,7 @@ import {
   inviteCardImpressions,
   type ContentIdea,
 } from "@klip/db/schema";
-import { eq, and, inArray, asc, isNotNull } from "drizzle-orm";
+import { eq, and, inArray, asc, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -245,25 +245,16 @@ Maximo 4 content_ideas. Apenas JSON, sem markdown.`,
       .where(eq(extractedContents.id, extractedContentId))
       .returning();
 
-    // If premium: create invite_card_impressions for all community members
+    // If premium: create invite_card_impressions for all community members.
+    // Done as a single INSERT ... SELECT to avoid loading all members into Node.js memory.
     if (accessLevel === "premium") {
-      const members = await db
-        .select()
-        .from(communityMembers)
-        .where(eq(communityMembers.communityId, draft.communityId));
-
-      if (members.length > 0) {
-        await db
-          .insert(inviteCardImpressions)
-          .values(
-            members.map((m) => ({
-              extractedContentId,
-              memberClerkId: m.userId,
-              action: "shown" as const,
-            }))
-          )
-          .onConflictDoNothing();
-      }
+      await db.execute(sql`
+        INSERT INTO invite_card_impressions (extracted_content_id, member_clerk_id, action)
+        SELECT ${extractedContentId}, user_id, 'shown'
+        FROM community_members
+        WHERE community_id = ${draft.communityId}
+        ON CONFLICT DO NOTHING
+      `);
     }
 
     return reply.send({ success: true, extractedContent: published });
