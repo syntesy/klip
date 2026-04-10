@@ -78,7 +78,7 @@ export default async function CommunityPage({ params }: Props) {
   const regular = topicList.filter((t) => !t.isPinned);
 
   return (
-    <div className="flex flex-col h-full p-8 max-w-3xl">
+    <div className="flex flex-col h-full p-4 md:p-8 max-w-3xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

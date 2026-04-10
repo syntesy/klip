@@ -33,7 +33,7 @@ export default async function CommunitiesPage() {
   const communities = await fetchCommunities();
 
   return (
-    <div className="flex flex-col h-full p-8">
+    <div className="flex flex-col h-full p-4 md:p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-text-1">Minhas comunidades</h1>

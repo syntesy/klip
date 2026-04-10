@@ -270,7 +270,7 @@ export function TopicList({
 
   return (
     <aside
-      className="w-[280px] shrink-0 border-l border-border flex flex-col overflow-hidden"
+      className="hidden md:flex w-[280px] shrink-0 border-l border-border flex-col overflow-hidden"
       style={{ background: "var(--color-bg-surface)" }}
       aria-label="Painel do tópico"
     >

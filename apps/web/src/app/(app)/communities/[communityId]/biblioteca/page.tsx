@@ -57,7 +57,7 @@ export default async function BibliotecaPage({ params }: Props) {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-bg-page">
-      <div className="max-w-3xl mx-auto w-full px-8 py-8">
+      <div className="max-w-3xl mx-auto w-full px-4 py-4 md:px-8 md:py-8">
 
         {/* Header */}
         <div className="mb-8">

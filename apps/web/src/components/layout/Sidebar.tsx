@@ -65,6 +65,7 @@ export interface CommunityWithMeta extends Community {
 export interface SidebarProps {
   communities: CommunityWithMeta[];
   isOpen?: boolean;
+  onClose?: () => void;
 }
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
@@ -375,18 +376,26 @@ function UserFooter() {
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
-export function Sidebar({ communities, isOpen = true }: SidebarProps) {
+export function Sidebar({ communities, isOpen = true, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   return (
     <>
-      {/* Mobile overlay */}
+      {/* Mobile backdrop — tap to close */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black/20 z-20 md:hidden" aria-hidden="true" />
+        <div
+          className="fixed inset-0 bg-black/30 z-20 md:hidden"
+          aria-hidden="true"
+          onClick={onClose}
+        />
       )}
 
       <nav
         aria-label="Navegação principal"
+        // Close sidebar when any link inside is tapped on mobile
+        onClick={(e) => {
+          if ((e.target as HTMLElement).closest("a")) onClose?.();
+        }}
         className={cn(
           "w-[240px] min-w-[240px] max-w-[240px] h-screen",
           "flex flex-col bg-sidebar overflow-hidden shrink-0",

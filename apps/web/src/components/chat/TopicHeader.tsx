@@ -133,7 +133,7 @@ export function TopicHeader({
   return (
     <div className="flex flex-col shrink-0">
     <header
-      className="h-[60px] bg-bg-surface border-b border-border flex items-center px-5 gap-3 shrink-0"
+      className="h-[60px] bg-bg-surface border-b border-border flex items-center px-3 md:px-5 gap-2 md:gap-3 shrink-0"
       style={{ boxShadow: "0 1px 3px rgba(0,0,0,.04)" }}
       aria-label="Cabeçalho do tópico"
     >
@@ -143,7 +143,7 @@ export function TopicHeader({
           type="button"
           onClick={() => router.back()}
           aria-label="Voltar"
-          className="flex items-center justify-center w-[30px] h-[30px] rounded-[6px] text-text-3 border border-border bg-bg-subtle hover:bg-bg-muted hover:text-text-2 transition-colors shrink-0"
+          className="flex items-center justify-center w-[30px] h-[30px] min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 rounded-[6px] text-text-3 border border-border bg-bg-subtle hover:bg-bg-muted hover:text-text-2 transition-colors shrink-0"
         >
           <ChevronLeft />
         </button>
@@ -238,23 +238,25 @@ export function TopicHeader({
               Resumo IA
             </button>
 
-            {/* CTA primário */}
+            {/* CTA primário — icon-only on mobile, text on md+ */}
             <button
               type="button"
               onClick={onNewTopic}
-              className="flex items-center gap-[5px] text-[12px] font-semibold text-white px-[14px] py-[6px] rounded-[6px] bg-blue border-0 transition-all leading-none hover:shadow-[0_3px_10px_rgba(18,73,160,.4)]"
+              className="flex items-center gap-[5px] text-[12px] font-semibold text-white px-[10px] md:px-[14px] py-[6px] rounded-[6px] bg-blue border-0 transition-all leading-none hover:shadow-[0_3px_10px_rgba(18,73,160,.4)]"
               style={{ boxShadow: "0 2px 6px rgba(18,73,160,.3)" }}
+              title="Novo tópico"
             >
               <PlusIcon />
-              Novo tópico
+              <span className="hidden md:inline">Novo tópico</span>
             </button>
 
-            {/* Botão de voz — usa variáveis de tema */}
+            {/* Botão de voz — icon-only on mobile */}
             {isHost && (
               <button
                 type="button"
                 onClick={activeVoiceSession ? onEndVoice : onStartVoice}
                 className="flex items-center gap-[5px] text-[12px] font-medium px-[10px] py-[6px] rounded-[6px] transition-colors leading-none border"
+                title={activeVoiceSession ? "Encerrar áudio" : "Iniciar áudio ao vivo"}
                 style={activeVoiceSession ? {
                   background: "var(--color-danger-dim)",
                   borderColor: "var(--color-danger-border)",
@@ -265,7 +267,8 @@ export function TopicHeader({
                   color: "var(--color-text-2)",
                 }}
               >
-                {activeVoiceSession ? '⏹ Encerrar' : '🎙️ Ao vivo'}
+                <span>{activeVoiceSession ? '⏹' : '🎙️'}</span>
+                <span className="hidden md:inline">{activeVoiceSession ? ' Encerrar' : ' Ao vivo'}</span>
               </button>
             )}
           </div>

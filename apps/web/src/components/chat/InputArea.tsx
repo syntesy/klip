@@ -569,7 +569,7 @@ export function InputArea({
 
   return (
     <div
-      className="flex flex-col gap-2 px-5 py-3 shrink-0"
+      className="flex flex-col gap-2 px-4 md:px-5 py-3 pb-safe shrink-0"
       style={{
         background: "var(--color-bg-surface)",
         borderTop: "1px solid var(--color-border)",

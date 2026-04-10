@@ -147,6 +147,18 @@
 }
 
 @layer utilities {
+  /* iOS safe-area padding for components near the bottom edge */
+  .pb-safe {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  /* Ensure interactive elements have adequate touch targets on mobile */
+  @media (max-width: 767px) {
+    button:not([data-no-touch-expand]), [role="button"]:not([data-no-touch-expand]) {
+      position: relative;
+    }
+  }
+
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: var(--color-border-mid) transparent;

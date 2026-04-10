@@ -43,7 +43,7 @@ export default async function DecisionsPage() {
   const decisions = await fetchDecisions();
 
   return (
-    <div className="flex flex-col h-full p-8">
+    <div className="flex flex-col h-full p-4 md:p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-text-1">Decisões</h1>
         <p className="text-text-2 mt-1">

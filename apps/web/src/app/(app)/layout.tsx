@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { MobileLayout } from "@/components/layout/MobileLayout";
 import type { CommunityWithMeta } from "@/components/layout/Sidebar";
 
 export const dynamic = "force-dynamic";
@@ -28,9 +28,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const communities = await fetchCommunities();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-bg-page">
-      <Sidebar communities={communities} isOpen={true} />
-      <main className="flex-1 overflow-hidden">{children}</main>
-    </div>
+    <MobileLayout communities={communities}>
+      {children}
+    </MobileLayout>
   );
 }

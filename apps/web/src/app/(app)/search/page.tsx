@@ -2,7 +2,7 @@
 
 export default function SearchPage() {
   return (
-    <div className="flex flex-col items-center justify-center h-full px-8">
+    <div className="flex flex-col items-center justify-center h-full px-4 md:px-8">
       <div className="w-full max-w-xl">
         {/* Icon */}
         <div className="flex justify-center mb-6">
