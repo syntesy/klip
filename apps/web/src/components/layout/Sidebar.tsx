@@ -153,14 +153,6 @@ function isNavActive(href: string, pathname: string, matchExact = false): boolea
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function Logo() {
-  return (
-    <div className="flex items-center px-4 pt-4 pb-[14px] border-b border-[var(--color-sidebar-border)] shrink-0" style={{ gap: 11 }}>
-      <KlipLogo variant="full" size="md" theme="light" />
-    </div>
-  );
-}
-
 function NavBadge({ count }: { count: number }) {
   return (
     <span className="ml-auto shrink-0 bg-[var(--color-blue-dim)] text-blue text-[10px] font-semibold leading-none px-[5px] py-[2px] rounded-[10px]">
@@ -423,19 +415,33 @@ function UserFooter() {
 export function Sidebar({ communities, isOpen = true, onClose }: SidebarProps) {
   const pathname = usePathname();
 
+  // Swipe-to-close: track touch start X; swipe left ≥ 60px closes the drawer
+  const touchStartX = useRef(0);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0]!.clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0]!.clientX - touchStartX.current;
+    if (dx < -60) onClose?.();
+  };
+
   return (
     <>
-      {/* Mobile backdrop — tap to close */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 z-20 md:hidden"
-          aria-hidden="true"
-          onClick={onClose}
-        />
-      )}
+      {/* Mobile backdrop — animated opacity, tap to close */}
+      <div
+        aria-hidden="true"
+        onClick={onClose}
+        className={cn(
+          "fixed inset-0 z-20 bg-black/60 md:hidden",
+          "transition-opacity duration-300",
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+        )}
+      />
 
       <nav
         aria-label="Navegação principal"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         // Close sidebar when any link inside is tapped on mobile
         onClick={(e) => {
           if ((e.target as HTMLElement).closest("a")) onClose?.();
@@ -445,13 +451,33 @@ export function Sidebar({ communities, isOpen = true, onClose }: SidebarProps) {
           "flex flex-col bg-sidebar overflow-hidden shrink-0",
           "border-r border-[var(--color-sidebar-border)]",
           // Mobile: fixed + slide
-          "fixed top-0 left-0 z-30 transition-transform duration-200 ease-in-out",
+          "fixed top-0 left-0 z-30 transition-transform duration-300 ease-out",
           isOpen ? "translate-x-0" : "-translate-x-full",
           // Desktop: always visible, no transition
           "md:relative md:translate-x-0 md:transition-none",
         )}
       >
-        <Logo />
+        {/* Logo row — on mobile shows X close button + safe area top */}
+        <div
+          className="flex items-center justify-between px-4 pb-[14px] border-b border-[var(--color-sidebar-border)] shrink-0"
+          style={{ gap: 8, paddingTop: "max(16px, env(safe-area-inset-top))" }}
+        >
+          <KlipLogo variant="full" size="md" theme="light" />
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Fechar menu"
+              className="md:hidden flex items-center justify-center w-8 h-8 rounded-[8px] text-text-3 hover:bg-[var(--color-sidebar-hover)] hover:text-text-2 transition-colors"
+            >
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <line x1="2" y1="2" x2="12" y2="12" />
+                <line x1="12" y1="2" x2="2" y2="12" />
+              </svg>
+            </button>
+          )}
+        </div>
+
         <NavMenu pathname={pathname} />
 
         {/* Divider */}

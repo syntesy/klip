@@ -40,7 +40,10 @@ function MobileLayoutInner({ communities, children }: MobileLayoutProps) {
       <Sidebar communities={communities} isOpen={sidebarOpen} onClose={closeSidebar} />
       <div className="flex flex-col flex-1 overflow-hidden min-w-0">
         {/* Mobile-only top bar */}
-        <div className="flex items-center h-[52px] px-4 border-b border-border bg-bg-surface shrink-0 md:hidden">
+        <div
+          className="flex items-center px-4 border-b border-border bg-bg-surface shrink-0 md:hidden"
+          style={{ paddingTop: "env(safe-area-inset-top, 0px)", minHeight: 52 }}
+        >
           <button
             type="button"
             onClick={openSidebar}

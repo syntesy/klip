@@ -1,6 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
 import { MobileLayout } from "@/components/layout/MobileLayout";
-import { MobileApp } from "@/components/layout/MobileApp";
 import type { CommunityWithMeta } from "@/components/layout/Sidebar";
 
 export const dynamic = "force-dynamic";
@@ -29,17 +28,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const communities = await fetchCommunities();
 
   return (
-    <>
-      {/* Mobile: native app stack */}
-      <div className="md:hidden h-[100dvh] overflow-hidden">
-        <MobileApp initialCommunities={communities} />
-      </div>
-      {/* Desktop: sidebar + page content */}
-      <div className="hidden md:flex h-[100dvh]">
-        <MobileLayout communities={communities}>
-          {children}
-        </MobileLayout>
-      </div>
-    </>
+    <MobileLayout communities={communities}>
+      {children}
+    </MobileLayout>
   );
 }
