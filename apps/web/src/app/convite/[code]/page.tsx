@@ -1,18 +1,26 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { db } from "@klip/db";
-import { invites, communities, communityMembers } from "@klip/db/schema";
-import { eq, or, and, sql } from "drizzle-orm";
 import { AcceptInviteClient } from "./AcceptInviteClient";
 
 interface Props {
   params: { code: string };
 }
 
-// Server-only API URL for the accept call (avoids localhost in production).
-// Set INTERNAL_API_URL in Railway if web and api are separate services.
-// Falls back to NEXT_PUBLIC_API_URL (baked at build time), then localhost.
-const SERVER_API_URL =
+interface InviteData {
+  code: string;
+  community: {
+    id: string;
+    name: string;
+    description: string | null;
+  };
+  expiresAt: string | null;
+  maxUses: number | null;
+  useCount: number;
+}
+
+// NEXT_PUBLIC_API_URL is baked at build time — safe to use server-side too.
+// For Railway private networking set INTERNAL_API_URL on the web service.
+const API_URL =
   process.env.INTERNAL_API_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
   "http://localhost:3001";
@@ -20,107 +28,49 @@ const SERVER_API_URL =
 export default async function InvitePage({ params }: Props) {
   const { code } = params;
 
-  // ── DEBUG — remove after diagnosis ───────────────────────────────────────
-  const dbUrl = process.env.DATABASE_URL;
   console.log("=== CONVITE DEBUG ===");
   console.log("code recebido:", code);
-  console.log("DATABASE_URL definida:", !!dbUrl);
-  console.log("DATABASE_URL (início):", dbUrl ? dbUrl.slice(0, 30) + "…" : "AUSENTE");
-  console.log("SERVER_API_URL:", SERVER_API_URL);
-  // ─────────────────────────────────────────────────────────────────────────
+  console.log("API_URL:", API_URL);
 
-  // ── 1. Fetch invite directly from DB — no HTTP round-trip ────────────────
-  let invite: typeof invites.$inferSelect | undefined;
+  let res: Response;
   try {
-    [invite] = await db
-      .select()
-      .from(invites)
-      .where(or(eq(invites.slug, code), eq(invites.code, code)))
-      .limit(1);
-    console.log("resultado query:", JSON.stringify(invite ?? null));
+    res = await fetch(`${API_URL}/api/invites/${code}`, { cache: "no-store" });
+    console.log("status da resposta:", res.status);
   } catch (err) {
-    console.error("ERRO na query do convite:", err instanceof Error ? err.message : String(err));
-    return <NotFound reason="not-found" />;
+    console.error("ERRO no fetch:", err instanceof Error ? err.message : String(err));
+    return <ServiceUnavailable />;
   }
 
-  if (!invite) {
-    console.log("Convite não encontrado para code:", code);
-    return <NotFound reason="not-found" />;
+  if (!res.ok) {
+    console.log("resposta não-ok, status:", res.status);
+    return <NotFound status={res.status} />;
   }
 
-  if (invite.expiresAt && invite.expiresAt < new Date()) {
-    return <NotFound reason="expired" />;
-  }
+  const invite = await res.json() as InviteData;
+  console.log("convite encontrado:", invite.code, "comunidade:", invite.community.name);
 
-  if (invite.maxUses !== null && invite.useCount >= invite.maxUses) {
-    return <NotFound reason="limit" />;
-  }
-
-  const [community] = await db
-    .select()
-    .from(communities)
-    .where(eq(communities.id, invite.communityId))
-    .limit(1);
-
-  if (!community) {
-    return <NotFound reason="not-found" />;
-  }
-
-  // ── 2. If already authenticated, try to accept immediately ───────────────
+  // If already authenticated, try to accept immediately
   const { userId, getToken } = await auth();
   if (userId) {
-    // Check membership first (avoids a wasted HTTP call)
-    const [existing] = await db
-      .select({ id: communityMembers.id })
-      .from(communityMembers)
-      .where(
-        and(
-          eq(communityMembers.communityId, invite.communityId),
-          eq(communityMembers.userId, userId)
-        )
-      )
-      .limit(1);
-
-    if (existing) {
-      // Already a member — go straight in
-      redirect(`/communities/${invite.communityId}`);
-    }
-
-    // Not a member yet — call the API to accept (handles the locked transaction
-    // and useCount increment; we don't want to duplicate that logic here)
     try {
       const token = await getToken();
-      const acceptRes = await fetch(
-        `${SERVER_API_URL}/api/invites/${invite.code}/accept`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token!}` },
-          cache: "no-store",
-        }
-      );
+      const acceptRes = await fetch(`${API_URL}/api/invites/${invite.code}/accept`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token!}` },
+        cache: "no-store",
+      });
       if (acceptRes.ok) {
-        redirect(`/communities/${invite.communityId}`);
+        const data = await acceptRes.json() as { communityId: string };
+        redirect(`/communities/${data.communityId}`);
       }
     } catch {
-      // API unreachable — fall through and show the manual accept button
+      // API unreachable — fall through to show manual accept button
     }
   }
-
-  const inviteData = {
-    code: invite.code,
-    community: {
-      id: community.id,
-      name: community.name,
-      description: community.description,
-    },
-    expiresAt: invite.expiresAt ? invite.expiresAt.toISOString() : null,
-    maxUses: invite.maxUses,
-    useCount: invite.useCount,
-  };
 
   return (
     <AcceptInviteClient
-      invite={inviteData}
+      invite={invite}
       isAuthenticated={!!userId}
       code={invite.code}
     />
@@ -129,20 +79,34 @@ export default async function InvitePage({ params }: Props) {
 
 // ─── Error states ─────────────────────────────────────────────────────────────
 
-function NotFound({ reason }: { reason: "not-found" | "expired" | "limit" }) {
-  const title =
-    reason === "not-found" ? "Convite não encontrado" : "Convite inválido";
-  const body =
-    reason === "not-found"
-      ? "Este link de convite não existe."
-      : "Este link expirou ou atingiu o limite de usos.";
-
+function NotFound({ status }: { status: number }) {
+  const isGone = status === 410;
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg-page p-4">
       <div className="text-center max-w-sm">
         <p className="text-4xl mb-4">🔗</p>
-        <h1 className="text-xl font-bold text-text-1 mb-2">{title}</h1>
-        <p className="text-text-3 text-sm">{body}</p>
+        <h1 className="text-xl font-bold text-text-1 mb-2">
+          {isGone ? "Convite inválido" : "Convite não encontrado"}
+        </h1>
+        <p className="text-text-3 text-sm">
+          {isGone
+            ? "Este link expirou ou atingiu o limite de usos."
+            : "Este link de convite não existe."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ServiceUnavailable() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-bg-page p-4">
+      <div className="text-center max-w-sm">
+        <p className="text-4xl mb-4">🔗</p>
+        <h1 className="text-xl font-bold text-text-1 mb-2">Serviço indisponível</h1>
+        <p className="text-text-3 text-sm">
+          Não foi possível verificar o convite. Tente novamente em instantes.
+        </p>
       </div>
     </div>
   );
