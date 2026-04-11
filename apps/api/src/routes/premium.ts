@@ -12,12 +12,13 @@ import { z } from "zod";
 
 const createPremiumKlipSchema = z.object({
   communityId: z.string().uuid(),
-  klipId: z.string().uuid().optional(),
+  klipId: z.string().uuid().nullish(),
   title: z.string().min(1).max(200),
-  price: z.number().int().min(100).max(99900), // R$1,00 – R$999,00
+  // Accept number or numeric string from client — coerce to integer cents
+  price: z.coerce.number().int().min(100).max(99900),
   contentType: z.enum(["video", "audio", "document", "image", "text"]),
-  contentUrl: z.string().url().max(500).optional(),
-  previewText: z.string().max(2000).optional(),
+  contentUrl: z.string().url().max(500).nullish(),
+  previewText: z.string().max(2000).nullish(),
 });
 
 export async function premiumRoutes(fastify: FastifyInstance) {
@@ -109,19 +110,27 @@ export async function premiumRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ error: "Apenas donos e moderadores podem criar klips premium" });
       }
 
-      const [created] = await db
-        .insert(premiumKlips)
-        .values({
-          communityId,
-          klipId: klipId ?? null,
-          title,
-          price,
-          contentType,
-          contentUrl: contentUrl ?? null,
-          previewText: previewText ?? null,
-          createdBy: req.userId,
-        })
-        .returning();
+      let created: typeof premiumKlips.$inferSelect;
+      try {
+        const [row] = await db
+          .insert(premiumKlips)
+          .values({
+            communityId,
+            klipId: klipId ?? null,
+            title,
+            price,
+            contentType,
+            contentUrl: contentUrl ?? null,
+            previewText: previewText ?? null,
+            createdBy: req.userId,
+          })
+          .returning();
+        if (!row) throw new Error("Insert returned no rows");
+        created = row;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Database error";
+        return reply.status(500).send({ error: `Falha ao criar klip premium: ${msg}` });
+      }
 
       // Notify all community members via WebSocket (personal rooms)
       try {
@@ -136,7 +145,7 @@ export async function premiumRoutes(fastify: FastifyInstance) {
             title,
             price,
             communityId,
-            premiumKlipId: created!.id,
+            premiumKlipId: created.id,
           });
         }
       } catch {
