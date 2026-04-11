@@ -9,6 +9,7 @@ import { TopicChatArea } from "@/components/chat/TopicChatArea";
 import { TopicList, type TopicItem } from "@/components/chat/TopicList";
 import { NewTopicModal } from "@/components/communities/NewTopicButton";
 import { ExtrairPanel } from "@/components/extrair/ExtrairPanel";
+import { MakePremiumModal } from "@/components/premium/MakePremiumModal";
 import type { Message } from "@/components/chat/MessageFeed";
 import type { TopicSummary } from "@/hooks/useTopicSocket";
 
@@ -197,6 +198,7 @@ export function TopicPageClient({
   const [summary, setSummary] = useState<TopicSummary | null>(initialSummary);
   const [extrairMessages, setExtrairMessages] = useState<Message[]>([]);
   const [extrairOpen, setExtrairOpen] = useState(false);
+  const [premiumMessage, setPremiumMessage] = useState<Message | null>(null);
 
   // Pinned message state — initialized from server data
   const [pinnedMessage, setPinnedMessage] = useState<PinnedMessage | null>(
@@ -391,6 +393,7 @@ export function TopicPageClient({
               setExtrairMessages([msg]);
               setExtrairOpen(true);
             }}
+            {...(canExtrair ? { onMakePremium: (msg: Message) => setPremiumMessage(msg) } : {})}
             onPin={(msg) => void handlePin(msg)}
             {...(highlightedMessageId ? { highlightedMessageId } : {})}
           />
@@ -426,6 +429,14 @@ export function TopicPageClient({
           topicTitle={topic.title}
           selectedMessages={extrairMessages}
           onClose={() => setExtrairOpen(false)}
+        />
+      )}
+      {premiumMessage && (
+        <MakePremiumModal
+          message={premiumMessage}
+          communityId={communityId}
+          onClose={() => setPremiumMessage(null)}
+          onSuccess={() => setPremiumMessage(null)}
         />
       )}
     </div>

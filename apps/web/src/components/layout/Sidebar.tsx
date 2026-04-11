@@ -200,8 +200,10 @@ function CommunityList({
       ) : (
         communities.map((community) => {
           const active = pathname.startsWith(`/communities/${community.id}`) &&
-            !pathname.includes("/biblioteca");
+            !pathname.includes("/biblioteca") &&
+            !pathname.includes("/premium");
           const bibliotecaActive = pathname === `/communities/${community.id}/biblioteca`;
+          const premiumActive = pathname === `/communities/${community.id}/premium`;
           return (
             <div key={community.id}>
               <Link
@@ -239,6 +241,22 @@ function CommunityList({
               >
                 <span style={{ fontSize: 11, color: "var(--color-blue-bright)" }}>✦</span>
                 <span>Sala Premium</span>
+              </Link>
+              {/* Área Premium sub-item */}
+              <Link
+                href={`/communities/${community.id}/premium`}
+                aria-current={premiumActive ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-[7px] pl-[32px] pr-[10px] py-[4px] rounded-[7px] text-[12px] mb-[1px] no-underline",
+                  "transition-colors duration-[120ms]",
+                  premiumActive
+                    ? "font-semibold bg-bg-surface shadow-[0_1px_4px_rgba(0,0,0,.07)]"
+                    : "font-normal text-text-3 bg-transparent hover:bg-[var(--color-sidebar-hover)] hover:text-text-2"
+                )}
+                style={{ color: premiumActive ? "#F5C842" : undefined }}
+              >
+                <span style={{ fontSize: 11 }}>⭐</span>
+                <span>Área Premium</span>
               </Link>
             </div>
           );

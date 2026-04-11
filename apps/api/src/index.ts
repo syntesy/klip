@@ -13,6 +13,7 @@ import { invitesRoutes } from "./routes/invites.js";
 import { uploadsRoutes } from "./routes/uploads.js";
 import { extrairRoutes } from "./routes/extrair.js";
 import { voiceRoutes } from "./routes/voice.js";
+import { premiumRoutes } from "./routes/premium.js";
 import multipart from "@fastify/multipart";
 import { registerSocketHandlers } from "./socket/index.js";
 
@@ -83,6 +84,7 @@ await fastify.register(invitesRoutes, { prefix: "/api/invites" });
 await fastify.register(uploadsRoutes, { prefix: "/api/uploads" });
 await fastify.register(extrairRoutes, { prefix: "/api/extrair" });
 await fastify.register(voiceRoutes, { prefix: "/api" });
+await fastify.register(premiumRoutes, { prefix: "/api/premium" });
 
 // Health check
 fastify.get("/health", async () => ({ status: "ok", timestamp: new Date().toISOString() }));

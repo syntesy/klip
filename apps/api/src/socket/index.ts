@@ -67,6 +67,7 @@ export interface ServerToClientEvents {
   "voice:hand-raised": (payload: { clerkUserId: string; userName: string; sessionId: string }) => void;
   "voice:speak-granted": (payload: { sessionId: string }) => void;
   "notification:new": (payload: { notification: Record<string, unknown> }) => void;
+  "premium:new": (payload: { title: string; price: number; communityId: string; premiumKlipId: string }) => void;
 }
 
 export interface SocketData {

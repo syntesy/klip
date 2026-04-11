@@ -31,6 +31,7 @@ export interface TopicChatAreaProps {
   onSummaryChange?: (s: TopicSummary | null) => void;
   canExtrair?: boolean;
   onExtrair?: (msg: Message) => void;
+  onMakePremium?: (msg: Message) => void;
   onPin?: (msg: Message) => void;
   highlightedMessageId?: string | null;
 }
@@ -76,6 +77,7 @@ function TopicChatAreaInner({
   onSummaryChange,
   canExtrair,
   onExtrair,
+  onMakePremium,
   onPin,
   highlightedMessageId,
   userId,
@@ -337,6 +339,7 @@ function TopicChatAreaInner({
         onReply={handleReply}
         canExtrair={canExtrair ?? false}
         {...(onExtrair ? { onExtrair } : {})}
+        {...(onMakePremium ? { onMakePremium } : {})}
         {...(onPin ? { onPin } : {})}
         {...(highlightedMessageId ? { highlightedMessageId } : {})}
       />

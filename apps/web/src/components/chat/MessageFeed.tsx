@@ -64,6 +64,7 @@ export interface MessageFeedProps {
   onReply?: (message: Message) => void;
   onExtrair?: (message: Message) => void;
   onPin?: (message: Message) => void;
+  onMakePremium?: (message: Message) => void;
   canExtrair?: boolean;
   highlightedMessageId?: string | null;
 }
@@ -461,6 +462,7 @@ function MessageHoverBar({
   canExtrair,
   onReactionsChange,
   onPin,
+  onMakePremium,
   isDark,
 }: {
   msg: Message;
@@ -470,6 +472,7 @@ function MessageHoverBar({
   canExtrair?: boolean;
   onReactionsChange?: (messageId: string, next: Reaction[]) => void;
   onPin?: (msg: Message) => void;
+  onMakePremium?: (msg: Message) => void;
   isDark: boolean;
 }) {
   const { getToken } = useAuth();
@@ -594,6 +597,19 @@ function MessageHoverBar({
             ✦ Extrair
           </button>
         )}
+
+        {canExtrair && onMakePremium && (
+          <button
+            type="button"
+            onClick={() => onMakePremium(msg)}
+            style={btnStyle}
+            title="Tornar premium"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#F5C842"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = btnColor; }}
+          >
+            ⭐ Premium
+          </button>
+        )}
       </div>
     </div>
   );
@@ -624,6 +640,7 @@ function MessageRow({
   canExtrair,
   onReactionsChange,
   onPin,
+  onMakePremium,
   isHighlighted,
 }: {
   msg: Message;
@@ -635,6 +652,7 @@ function MessageRow({
   canExtrair?: boolean;
   onReactionsChange?: (messageId: string, next: Reaction[]) => void;
   onPin?: (msg: Message) => void;
+  onMakePremium?: (msg: Message) => void;
   isHighlighted?: boolean;
 }) {
   const { theme, mounted } = useDarkMode();
@@ -722,6 +740,7 @@ function MessageRow({
         canExtrair={canExtrair ?? false}
         {...(onReactionsChange ? { onReactionsChange } : {})}
         {...(onPin ? { onPin } : {})}
+        {...(onMakePremium ? { onMakePremium } : {})}
       />
     </div>
   );
@@ -735,6 +754,7 @@ function MessageGroupBlock({
   canExtrair,
   onReactionsChange,
   onPin,
+  onMakePremium,
   highlightedMessageId,
 }: {
   group: MessageGroup;
@@ -744,6 +764,7 @@ function MessageGroupBlock({
   canExtrair?: boolean;
   onReactionsChange?: (messageId: string, next: Reaction[]) => void;
   onPin?: (msg: Message) => void;
+  onMakePremium?: (msg: Message) => void;
   highlightedMessageId?: string | null;
 }) {
   return (
@@ -760,6 +781,7 @@ function MessageGroupBlock({
           canExtrair={canExtrair ?? false}
           {...(onReactionsChange ? { onReactionsChange } : {})}
           {...(onPin ? { onPin } : {})}
+          {...(onMakePremium ? { onMakePremium } : {})}
           isHighlighted={highlightedMessageId === msg.id}
         />
       ))}
@@ -791,6 +813,7 @@ export function MessageFeed({
   onReply,
   onExtrair,
   onPin,
+  onMakePremium,
   canExtrair,
   highlightedMessageId,
 }: MessageFeedProps) {
@@ -833,6 +856,7 @@ export function MessageFeed({
                 canExtrair={canExtrair ?? false}
                 onReactionsChange={handleReactionsChange}
                 {...(onPin ? { onPin } : {})}
+                {...(onMakePremium ? { onMakePremium } : {})}
                 {...(highlightedMessageId ? { highlightedMessageId } : {})}
               />
             ))}
