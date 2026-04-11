@@ -1,8 +1,11 @@
 -- 0012: Área Premium — premium_klips e premium_purchases
 
-CREATE TYPE "premium_content_type" AS ENUM ('video', 'audio', 'document', 'image', 'text');
+DO $$ BEGIN
+  CREATE TYPE "premium_content_type" AS ENUM ('video', 'audio', 'document', 'image', 'text');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TABLE "premium_klips" (
+CREATE TABLE IF NOT EXISTS "premium_klips" (
   "id"             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "klip_id"        uuid REFERENCES "klips"("id") ON DELETE SET NULL,
   "community_id"   uuid NOT NULL REFERENCES "communities"("id") ON DELETE CASCADE,
@@ -17,10 +20,10 @@ CREATE TABLE "premium_klips" (
   "is_active"      boolean NOT NULL DEFAULT true
 );
 
-CREATE INDEX "premium_klips_community_idx" ON "premium_klips" ("community_id");
-CREATE INDEX "premium_klips_created_by_idx" ON "premium_klips" ("created_by");
+CREATE INDEX IF NOT EXISTS "premium_klips_community_idx" ON "premium_klips" ("community_id");
+CREATE INDEX IF NOT EXISTS "premium_klips_created_by_idx" ON "premium_klips" ("created_by");
 
-CREATE TABLE "premium_purchases" (
+CREATE TABLE IF NOT EXISTS "premium_purchases" (
   "id"                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id"           varchar(255) NOT NULL,
   "premium_klip_id"   uuid NOT NULL REFERENCES "premium_klips"("id") ON DELETE CASCADE,
@@ -29,7 +32,7 @@ CREATE TABLE "premium_purchases" (
   "purchased_at"      timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX "premium_purchases_user_klip_unique"
+CREATE UNIQUE INDEX IF NOT EXISTS "premium_purchases_user_klip_unique"
   ON "premium_purchases" ("user_id", "premium_klip_id");
-CREATE INDEX "premium_purchases_user_idx"  ON "premium_purchases" ("user_id");
-CREATE INDEX "premium_purchases_klip_idx"  ON "premium_purchases" ("premium_klip_id");
+CREATE INDEX IF NOT EXISTS "premium_purchases_user_idx"  ON "premium_purchases" ("user_id");
+CREATE INDEX IF NOT EXISTS "premium_purchases_klip_idx"  ON "premium_purchases" ("premium_klip_id");

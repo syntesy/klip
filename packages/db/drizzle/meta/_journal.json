@@ -71,6 +71,34 @@
       "when": 1776200000000,
       "tag": "0009_search_trgm",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1776300000000,
+      "tag": "0010_display_name",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776400000000,
+      "tag": "0011_indexes_and_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1776500000000,
+      "tag": "0012_premium_klips",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1776600000000,
+      "tag": "0013_saved_messages",
+      "breakpoints": true
     }
   ]
 }
