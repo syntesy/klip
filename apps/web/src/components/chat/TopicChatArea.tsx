@@ -30,6 +30,7 @@ export interface TopicChatAreaProps {
   /** Called whenever the summary changes (API response or socket push) */
   onSummaryChange?: (s: TopicSummary | null) => void;
   canExtrair?: boolean;
+  canSave?: boolean;
   onExtrair?: (msg: Message) => void;
   onMakePremium?: (msg: Message) => void;
   onPin?: (msg: Message) => void;
@@ -59,7 +60,7 @@ function toFeedMessage(m: MessageWithAuthor): Message {
 
 // ─── Inner component (no Clerk hooks) ────────────────────────────────────────
 
-interface TopicChatAreaInnerProps extends TopicChatAreaProps {
+type TopicChatAreaInnerProps = TopicChatAreaProps & {
   userId: string;
   userName: string;
   getToken?: () => Promise<string | null>;
@@ -76,6 +77,7 @@ function TopicChatAreaInner({
   onMount,
   onSummaryChange,
   canExtrair,
+  canSave,
   onExtrair,
   onMakePremium,
   onPin,
@@ -338,6 +340,7 @@ function TopicChatAreaInner({
         onKlipMessage={handleKlipMessage}
         onReply={handleReply}
         canExtrair={canExtrair ?? false}
+        canSave={canSave ?? false}
         {...(onExtrair ? { onExtrair } : {})}
         {...(onMakePremium ? { onMakePremium } : {})}
         {...(onPin ? { onPin } : {})}

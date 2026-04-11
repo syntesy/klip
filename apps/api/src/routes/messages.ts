@@ -3,7 +3,7 @@ import { requireAuth } from "../plugins/auth.js";
 import { db } from "../lib/db.js";
 import { getIo } from "../lib/io.js";
 import { bulkGetClerkDisplayNames } from "../lib/clerkCache.js";
-import { messages, topics, communityMembers, messageReactions } from "@klip/db/schema";
+import { messages, topics, communityMembers, messageReactions, savedMessages } from "@klip/db/schema";
 import { eq, and, asc, desc, sql, isNull, lt, inArray } from "drizzle-orm";
 import { z } from "zod";
 
@@ -106,8 +106,25 @@ export async function messagesRoutes(fastify: FastifyInstance) {
       }
 
       const rows = await db
-        .select()
+        .select({
+          id: messages.id,
+          topicId: messages.topicId,
+          authorId: messages.authorId,
+          content: messages.content,
+          createdAt: messages.createdAt,
+          updatedAt: messages.updatedAt,
+          deletedAt: messages.deletedAt,
+          replyToId: messages.replyToId,
+          savedByCurrentUser: sql<boolean>`(${savedMessages.id} IS NOT NULL)`,
+        })
         .from(messages)
+        .leftJoin(
+          savedMessages,
+          and(
+            eq(savedMessages.messageId, messages.id),
+            eq(savedMessages.clerkUserId, req.userId)
+          )
+        )
         .where(
           and(
             eq(messages.topicId, topicId),
@@ -156,6 +173,7 @@ export async function messagesRoutes(fastify: FastifyInstance) {
         messages: page.map((m) => ({
           ...m,
           authorName: memberNameMap.get(m.authorId) ?? m.authorId,
+          savedByCurrentUser: Boolean(m.savedByCurrentUser),
         })),
         hasPreviousPage,
         // nextCursor is the createdAt of the oldest message in this page,

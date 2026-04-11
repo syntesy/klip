@@ -9,6 +9,7 @@ import { useAuth } from "@clerk/nextjs";
 import type { Attachment } from "@/hooks/useTopicSocket";
 import { AttachmentImage } from "@/components/chat/AttachmentImage";
 import { AudioPlayer } from "@/components/chat/AudioPlayer";
+import { SaveButton } from "@/components/chat/SaveButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -42,6 +43,7 @@ export interface Message {
   replyToId?: string | null;
   replyToAuthorName?: string | null;
   replyToContent?: string | null;
+  savedByCurrentUser?: boolean;
 }
 
 export interface TypingUser {
@@ -66,6 +68,8 @@ export interface MessageFeedProps {
   onPin?: (message: Message) => void;
   onMakePremium?: (message: Message) => void;
   canExtrair?: boolean;
+  /** Whether the current user can save messages (Pro/Business plan) */
+  canSave?: boolean;
   highlightedMessageId?: string | null;
 }
 
@@ -460,6 +464,7 @@ function MessageHoverBar({
   onReply,
   onExtrair,
   canExtrair,
+  canSave,
   onReactionsChange,
   onPin,
   onMakePremium,
@@ -470,6 +475,7 @@ function MessageHoverBar({
   onReply?: () => void;
   onExtrair?: () => void;
   canExtrair?: boolean;
+  canSave?: boolean;
   onReactionsChange?: (messageId: string, next: Reaction[]) => void;
   onPin?: (msg: Message) => void;
   onMakePremium?: (msg: Message) => void;
@@ -557,7 +563,7 @@ function MessageHoverBar({
           </button>
         )}
 
-        {onKlip && (
+        {canExtrair && onKlip && (
           <button
             type="button"
             onClick={onKlip}
@@ -568,6 +574,16 @@ function MessageHoverBar({
           >
             {msg.isKlipped ? "Klipado" : "Klipar"}
           </button>
+        )}
+
+        {canSave && (
+          <SaveButton
+            messageId={msg.id}
+            initialSaved={msg.savedByCurrentUser ?? false}
+            btnStyle={btnStyle}
+            btnColor={btnColor}
+            btnHoverColor={btnHoverColor}
+          />
         )}
 
         {onPin && (
@@ -638,6 +654,7 @@ function MessageRow({
   onReply,
   onExtrair,
   canExtrair,
+  canSave,
   onReactionsChange,
   onPin,
   onMakePremium,
@@ -650,6 +667,7 @@ function MessageRow({
   onReply?: (msg: Message) => void;
   onExtrair?: (msg: Message) => void;
   canExtrair?: boolean;
+  canSave?: boolean;
   onReactionsChange?: (messageId: string, next: Reaction[]) => void;
   onPin?: (msg: Message) => void;
   onMakePremium?: (msg: Message) => void;
@@ -738,6 +756,7 @@ function MessageRow({
         {...(onReply ? { onReply: () => onReply(msg) } : {})}
         {...(onExtrair ? { onExtrair: () => onExtrair(msg) } : {})}
         canExtrair={canExtrair ?? false}
+        canSave={canSave ?? false}
         {...(onReactionsChange ? { onReactionsChange } : {})}
         {...(onPin ? { onPin } : {})}
         {...(onMakePremium ? { onMakePremium } : {})}
@@ -752,6 +771,7 @@ function MessageGroupBlock({
   onReply,
   onExtrair,
   canExtrair,
+  canSave,
   onReactionsChange,
   onPin,
   onMakePremium,
@@ -762,6 +782,7 @@ function MessageGroupBlock({
   onReply?: (msg: Message) => void;
   onExtrair?: (msg: Message) => void;
   canExtrair?: boolean;
+  canSave?: boolean;
   onReactionsChange?: (messageId: string, next: Reaction[]) => void;
   onPin?: (msg: Message) => void;
   onMakePremium?: (msg: Message) => void;
@@ -779,6 +800,7 @@ function MessageGroupBlock({
           {...(onReply ? { onReply } : {})}
           {...(onExtrair ? { onExtrair } : {})}
           canExtrair={canExtrair ?? false}
+          canSave={canSave ?? false}
           {...(onReactionsChange ? { onReactionsChange } : {})}
           {...(onPin ? { onPin } : {})}
           {...(onMakePremium ? { onMakePremium } : {})}
@@ -815,6 +837,7 @@ export function MessageFeed({
   onPin,
   onMakePremium,
   canExtrair,
+  canSave,
   highlightedMessageId,
 }: MessageFeedProps) {
   // Local reactions state — keyed by messageId
@@ -854,6 +877,7 @@ export function MessageFeed({
                 {...(onReply ? { onReply } : {})}
                 {...(onExtrair ? { onExtrair } : {})}
                 canExtrair={canExtrair ?? false}
+                canSave={canSave ?? false}
                 onReactionsChange={handleReactionsChange}
                 {...(onPin ? { onPin } : {})}
                 {...(onMakePremium ? { onMakePremium } : {})}

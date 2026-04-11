@@ -10,3 +10,4 @@ export * from "./notifications.js";
 export * from "./message_reactions.js";
 export * from './voice_sessions.js'
 export * from './premiumKlips.js'
+export * from './savedMessages.js'

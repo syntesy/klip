@@ -132,6 +132,7 @@ interface TopicPageClientProps {
   initialMessages: Message[];
   initialSummary: TopicSummary | null;
   canExtrair?: boolean;
+  canSave?: boolean;
 }
 
 // ─── Decisions modal ──────────────────────────────────────────────────────────
@@ -190,6 +191,7 @@ export function TopicPageClient({
   initialMessages,
   initialSummary,
   canExtrair = false,
+  canSave = false,
 }: TopicPageClientProps) {
   const { getToken } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
@@ -389,6 +391,7 @@ export function TopicPageClient({
             onMount={handleMount}
             onSummaryChange={setSummary}
             canExtrair={canExtrair}
+            canSave={canSave}
             onExtrair={(msg) => {
               setExtrairMessages([msg]);
               setExtrairOpen(true);

@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
 import { DeleteTopicButton } from "@/components/communities/DeleteTopicButton";
 import { TopicPageClient } from "@/components/chat/TopicPageClient";
@@ -33,12 +33,13 @@ export default async function TopicPage({ params }: Props) {
   const token = await getToken();
   if (!token) notFound();
 
-  const [topicData, topicsData, messagesData, summaryData, memberData] = await Promise.all([
+  const [topicData, topicsData, messagesData, summaryData, memberData, clerkUser] = await Promise.all([
     apiFetch(`/api/topics/${topicId}`, token),
     apiFetch(`/api/topics?communityId=${communityId}`, token),
     apiFetch(`/api/messages?topicId=${topicId}`, token),
     apiFetch(`/api/ai/summary?topicId=${topicId}`, token),
     apiFetch(`/api/communities/${communityId}/me`, token),
+    currentUser(),
   ]);
 
   if (!topicData) notFound();
@@ -65,6 +66,7 @@ export default async function TopicPage({ params }: Props) {
     authorId: string; authorName?: string;
     createdAt: string; updatedAt: string; deletedAt: string | null;
     replyToId?: string | null; replyToAuthorName?: string | null; replyToContent?: string | null;
+    savedByCurrentUser?: boolean;
   };
   // messagesData is { messages: RawMessage[], hasPreviousPage, nextCursor } — not a flat array.
   // Using the paginated wrapper shape since cursor pagination was added in the API.
@@ -83,6 +85,7 @@ export default async function TopicPage({ params }: Props) {
     replyToId: m.replyToId ?? null,
     replyToAuthorName: m.replyToAuthorName ?? null,
     replyToContent: m.replyToContent ?? null,
+    savedByCurrentUser: m.savedByCurrentUser ?? false,
   }));
 
   const summary: TopicSummary | null = summaryData
@@ -95,6 +98,8 @@ export default async function TopicPage({ params }: Props) {
 
   const userRole: string = (memberData as { role?: string } | null)?.role ?? "member";
   const canExtrair = userRole === "owner" || userRole === "moderator";
+  const userPlan = (clerkUser?.publicMetadata?.["plan"] as string | undefined) ?? "starter";
+  const canSave = userPlan === "pro" || userPlan === "business";
 
   return (
     <div className="flex flex-col h-full">
@@ -111,6 +116,7 @@ export default async function TopicPage({ params }: Props) {
         initialMessages={messages}
         initialSummary={summary}
         canExtrair={canExtrair}
+        canSave={canSave}
       />
     </div>
   );

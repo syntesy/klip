@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useUser, useClerk } from "@clerk/nextjs";
+import { useUser, useClerk, useAuth } from "@clerk/nextjs";
 import { MoreHorizontal, Rss, Bookmark, CheckSquare, Sparkles, LogOut } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -78,12 +78,49 @@ interface NavItem {
   matchExact?: boolean;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { href: "/",          label: "Feed",         icon: <Rss size={15} strokeWidth={1.75} />,         matchExact: true },
-  { href: "/klips",     label: "Klips salvos", icon: <Bookmark size={15} strokeWidth={1.75} /> },
-  { href: "/decisions", label: "Decisões",     icon: <CheckSquare size={15} strokeWidth={1.75} /> },
-  { href: "/search",    label: "Busca IA",     icon: <Sparkles size={15} strokeWidth={1.75} /> },
+const NAV_ITEMS_BASE: NavItem[] = [
+  { href: "/",          label: "Feed",                icon: <Rss size={15} strokeWidth={1.75} />,         matchExact: true },
+  { href: "/klips",     label: "Klips salvos",        icon: <Bookmark size={15} strokeWidth={1.75} /> },
+  { href: "/library",   label: "Biblioteca Pessoal",  icon: (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 2h10a1 1 0 0 1 1 1v11l-6-3-6 3V3a1 1 0 0 1 1-1z" />
+    </svg>
+  )},
+  { href: "/decisions", label: "Decisões",            icon: <CheckSquare size={15} strokeWidth={1.75} /> },
+  { href: "/search",    label: "Busca IA",            icon: <Sparkles size={15} strokeWidth={1.75} /> },
 ];
+
+const API_URL_SIDEBAR = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+
+/** Fetches saved-messages count for the library badge. Returns 0 on any error. */
+function useSavedMessagesCount() {
+  const { getToken } = useAuth();
+  const [count, setCount] = useState(0);
+  const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+  useEffect(() => {
+    if (!hasClerk) return;
+    let cancelled = false;
+    async function fetch_count() {
+      try {
+        const token = await getToken();
+        const res = await fetch(`${API_URL_SIDEBAR}/api/me/saved-messages/count`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (res.ok && !cancelled) {
+          const data = await res.json() as { count: number };
+          setCount(data.count);
+        }
+      } catch {
+        // non-fatal
+      }
+    }
+    void fetch_count();
+    return () => { cancelled = true; };
+  }, [getToken, hasClerk]);
+
+  return count;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -133,12 +170,19 @@ function NavBadge({ count }: { count: number }) {
 }
 
 function NavMenu({ pathname }: { pathname: string }) {
+  const savedCount = useSavedMessagesCount();
+  const navItems: NavItem[] = NAV_ITEMS_BASE.map((item) =>
+    item.href === "/library" && savedCount > 0
+      ? { ...item, badge: savedCount }
+      : item
+  );
+
   return (
     <div className="px-3 pt-[14px] pb-1 shrink-0">
       <p className="text-[10px] font-semibold text-text-3 uppercase tracking-[0.1em] px-[10px] mb-[5px]">
         Menu
       </p>
-      {NAV_ITEMS.map((item) => {
+      {navItems.map((item) => {
         const active = isNavActive(item.href, pathname, item.matchExact);
         return (
           <Link
