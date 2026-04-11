@@ -105,30 +105,10 @@ export async function messagesRoutes(fastify: FastifyInstance) {
         if (cursorMsg) beforeTimestamp = cursorMsg.createdAt;
       }
 
+      // Fetch messages — plain select() to avoid any JOIN breaking the core query
       const rows = await db
-        .select({
-          id: messages.id,
-          topicId: messages.topicId,
-          authorId: messages.authorId,
-          content: messages.content,
-          isEdited: messages.isEdited,
-          attachments: messages.attachments,
-          createdAt: messages.createdAt,
-          updatedAt: messages.updatedAt,
-          deletedAt: messages.deletedAt,
-          replyToId: messages.replyToId,
-          replyToAuthorName: messages.replyToAuthorName,
-          replyToContent: messages.replyToContent,
-          savedByCurrentUser: sql<boolean>`(${savedMessages.id} IS NOT NULL)`,
-        })
+        .select()
         .from(messages)
-        .leftJoin(
-          savedMessages,
-          and(
-            eq(savedMessages.messageId, messages.id),
-            eq(savedMessages.clerkUserId, req.userId)
-          )
-        )
         .where(
           and(
             eq(messages.topicId, topicId),
@@ -145,6 +125,25 @@ export async function messagesRoutes(fastify: FastifyInstance) {
       const page = hasPreviousPage ? rows.slice(0, pageSize) : rows;
       // When paginating backwards (before cursor), results come newest-first; reverse for UI
       if (before) page.reverse();
+
+      // Fetch which messages the current user has saved — separate query so a missing
+      // saved_messages table or any other error never breaks the main message list.
+      const pageIds = page.map((m) => m.id);
+      let savedSet = new Set<string>();
+      try {
+        const savedRows = await db
+          .select({ messageId: savedMessages.messageId })
+          .from(savedMessages)
+          .where(
+            and(
+              eq(savedMessages.clerkUserId, req.userId),
+              inArray(savedMessages.messageId, pageIds)
+            )
+          );
+        savedSet = new Set(savedRows.map((r) => r.messageId));
+      } catch {
+        // Non-fatal — savedByCurrentUser defaults to false
+      }
 
       // Resolve author names: prefer cached displayName from communityMembers.
       // Only fetch members whose userId appears in this page — not the entire community —
@@ -177,7 +176,7 @@ export async function messagesRoutes(fastify: FastifyInstance) {
         messages: page.map((m) => ({
           ...m,
           authorName: memberNameMap.get(m.authorId) ?? m.authorId,
-          savedByCurrentUser: Boolean(m.savedByCurrentUser),
+          savedByCurrentUser: savedSet.has(m.id),
         })),
         hasPreviousPage,
         // nextCursor is the createdAt of the oldest message in this page,
