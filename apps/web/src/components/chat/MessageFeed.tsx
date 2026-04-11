@@ -2,7 +2,7 @@
 
 import { isToday, isYesterday, format, differenceInMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useAuth } from "@clerk/nextjs";
@@ -911,6 +911,20 @@ export function MessageFeed({
   // Local reactions state — keyed by messageId
   const [reactionsMap, setReactionsMap] = useState<Record<string, Reaction[]>>({});
 
+  // URL hash highlight — auto-scroll to #msg-{id} on mount
+  const [hashHighlightId, setHashHighlightId] = useState<string | null>(null);
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash.startsWith("#msg-")) return;
+    const msgId = hash.slice(5);
+    setHashHighlightId(msgId);
+    const scrollTimer = setTimeout(() => {
+      document.getElementById(`msg-${msgId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 120);
+    const clearTimer = setTimeout(() => setHashHighlightId(null), 2700);
+    return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
+  }, []);
+
   const handleReactionsChange = useCallback((messageId: string, next: Reaction[]) => {
     setReactionsMap((prev) => ({ ...prev, [messageId]: next }));
   }, []);
@@ -947,7 +961,7 @@ export function MessageFeed({
                 canSave={canSave ?? false}
                 onReactionsChange={handleReactionsChange}
                 {...(onPin ? { onPin } : {})}
-                {...(highlightedMessageId ? { highlightedMessageId } : {})}
+                highlightedMessageId={highlightedMessageId ?? hashHighlightId ?? null}
               />
             ))}
           </div>

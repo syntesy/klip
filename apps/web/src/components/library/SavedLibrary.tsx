@@ -98,7 +98,7 @@ function SavedItemCard({
         </div>
         <div className="flex items-center gap-3">
           <Link
-            href={`/communities/${item.message.communityId}/topics/${item.message.topicId}`}
+            href={`/communities/${item.message.communityId}/topics/${item.message.topicId}#msg-${item.messageId}`}
             className="text-[11px] text-blue hover:underline"
           >
             Ver no tópico →
