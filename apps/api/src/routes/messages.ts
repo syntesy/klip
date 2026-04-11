@@ -111,10 +111,14 @@ export async function messagesRoutes(fastify: FastifyInstance) {
           topicId: messages.topicId,
           authorId: messages.authorId,
           content: messages.content,
+          isEdited: messages.isEdited,
+          attachments: messages.attachments,
           createdAt: messages.createdAt,
           updatedAt: messages.updatedAt,
           deletedAt: messages.deletedAt,
           replyToId: messages.replyToId,
+          replyToAuthorName: messages.replyToAuthorName,
+          replyToContent: messages.replyToContent,
           savedByCurrentUser: sql<boolean>`(${savedMessages.id} IS NOT NULL)`,
         })
         .from(messages)
