@@ -25,9 +25,20 @@ export default async function InvitePage({ params }: Props) {
   const { code } = params;
 
   // Fetch invite data — public endpoint, no auth needed
-  const res = await fetch(`${API_URL}/api/invites/${code}`, {
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/api/invites/${code}`, { cache: "no-store" });
+  } catch {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg-page p-4">
+        <div className="text-center max-w-sm">
+          <p className="text-4xl mb-4">🔗</p>
+          <h1 className="text-xl font-bold text-text-1 mb-2">Serviço indisponível</h1>
+          <p className="text-text-3 text-sm">Não foi possível verificar o convite. Tente novamente em instantes.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!res.ok) {
     const status = res.status;
@@ -55,15 +66,18 @@ export default async function InvitePage({ params }: Props) {
   if (userId) {
     const token = await getToken();
     // Try to accept immediately — if already a member, redirect straight in
-    const acceptRes = await fetch(`${API_URL}/api/invites/${code}/accept`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token!}` },
-      cache: "no-store",
-    });
-
-    if (acceptRes.ok) {
-      const data = await acceptRes.json() as { communityId: string };
-      redirect(`/communities/${data.communityId}`);
+    try {
+      const acceptRes = await fetch(`${API_URL}/api/invites/${code}/accept`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token!}` },
+        cache: "no-store",
+      });
+      if (acceptRes.ok) {
+        const data = await acceptRes.json() as { communityId: string };
+        redirect(`/communities/${data.communityId}`);
+      }
+    } catch {
+      // API down — fall through to show invite page
     }
   }
 
