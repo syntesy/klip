@@ -28,6 +28,7 @@ export interface InputAreaProps {
   getToken?: () => Promise<string | null>;
   replyTo?: ReplyTarget | null;
   onCancelReply?: () => void;
+  isAdmin?: boolean;
 }
 
 /** Pending attachment — has a local preview URL before/instead of the final URL */
@@ -307,6 +308,7 @@ export function InputArea({
   getToken,
   replyTo,
   onCancelReply,
+  isAdmin = false,
 }: InputAreaProps) {
   const [content, setContent] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -805,16 +807,18 @@ export function InputArea({
 
         {/* Group 2: Decision + Poll */}
         <ToolbarButton icon={<DecisionIcon />} label="Decisão" onClick={onMarkDecision} disabled={disabled} />
-        <ToolbarButton
-          icon={
-            <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-              <path d="M2 12l4-4 3 3 3-5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          }
-          label="Votação"
-          onClick={() => {/* TODO fase 4 */}}
-          disabled={disabled}
-        />
+        {isAdmin && (
+          <ToolbarButton
+            icon={
+              <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
+                <path d="M2 12l4-4 3 3 3-5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            }
+            label="Enquete"
+            onClick={() => {/* TODO fase 4 */}}
+            disabled={disabled}
+          />
+        )}
 
         {/* Separator */}
         <span className="w-px h-[18px] bg-border mx-[4px] shrink-0" />

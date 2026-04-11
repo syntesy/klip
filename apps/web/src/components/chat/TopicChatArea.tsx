@@ -387,6 +387,7 @@ function TopicChatAreaInner({
         onTyping={handleTyping}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
+        isAdmin={isAdmin ?? false}
         {...(getToken !== undefined ? { getToken } : {})}
       />
     </div>
