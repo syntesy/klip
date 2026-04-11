@@ -176,4 +176,9 @@
     background-color: var(--color-border-mid);
     border-radius: 2px;
   }
+
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-4px); opacity: 1; }
+  }
 }

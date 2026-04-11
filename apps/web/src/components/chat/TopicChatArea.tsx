@@ -86,6 +86,8 @@ function TopicChatAreaInner({
   const [summary, setSummary] = useState<TopicSummary | null>(initialSummary ?? null);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
+  const [klipThinking, setKlipThinking] = useState(false);
+  const [privateKlipResponse, setPrivateKlipResponse] = useState<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -290,6 +292,37 @@ function TopicChatAreaInner({
     }
   }, [topicId, getToken]);
 
+  const handleKlipCommand = useCallback(
+    async ({ command, isPrivate }: { command: string; isPrivate: boolean }) => {
+      setKlipThinking(true);
+      try {
+        const token = getToken ? await getToken() : null;
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001"}/api/topics/${topicId}/klip-command`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ command, isPrivate }),
+          }
+        );
+        if (!res.ok) return;
+        const data = await res.json() as { response: string; messageId?: string };
+        if (isPrivate) {
+          setPrivateKlipResponse(data.response);
+        }
+        // Public response: broadcast via Socket.io — message appears through handleMessageNew
+      } catch {
+        // non-fatal
+      } finally {
+        setKlipThinking(false);
+      }
+    },
+    [topicId, getToken]
+  );
+
   // Register imperative handlers with parent on mount
   const onMountRef = useRef(onMount);
   useEffect(() => {
@@ -337,6 +370,9 @@ function TopicChatAreaInner({
         onReply={handleReply}
         isAdmin={isAdmin ?? false}
         canSave={canSave ?? false}
+        klipThinking={klipThinking}
+        {...(privateKlipResponse ? { privateKlipResponse } : {})}
+        onClearPrivateResponse={() => setPrivateKlipResponse(null)}
         {...(onPin ? { onPin } : {})}
         {...(highlightedMessageId ? { highlightedMessageId } : {})}
       />
@@ -347,6 +383,7 @@ function TopicChatAreaInner({
         onSendMessage={handleSendMessage}
         onMarkDecision={handleMarkDecision}
         onRequestSummary={handleRequestSummary}
+        onKlipCommand={handleKlipCommand}
         onTyping={handleTyping}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}

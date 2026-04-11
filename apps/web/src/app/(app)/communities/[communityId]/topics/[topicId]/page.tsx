@@ -99,7 +99,7 @@ export default async function TopicPage({ params }: Props) {
   const userRole: string = (memberData as { role?: string } | null)?.role ?? "member";
   const isAdmin = userRole === "owner" || userRole === "moderator";
   const userPlan = (clerkUser?.publicMetadata?.["plan"] as string | undefined) ?? "starter";
-  const canSave = userPlan === "pro" || userPlan === "business";
+  const canSave = userPlan === "pro" || userPlan === "business" || isAdmin;
 
   return (
     <div className="flex flex-col h-full">

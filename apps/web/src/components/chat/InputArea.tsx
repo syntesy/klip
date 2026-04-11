@@ -22,6 +22,7 @@ export interface InputAreaProps {
   onSendMessage: (content: string, attachments: Attachment[], replyTo?: ReplyTarget) => Promise<void>;
   onMarkDecision: () => void;
   onRequestSummary: () => void;
+  onKlipCommand?: (payload: { command: string; isPrivate: boolean }) => Promise<void>;
   onTyping?: () => void;
   disabled?: boolean;
   getToken?: () => Promise<string | null>;
@@ -300,6 +301,7 @@ export function InputArea({
   onSendMessage,
   onMarkDecision,
   onRequestSummary,
+  onKlipCommand,
   onTyping,
   disabled = false,
   getToken,
@@ -336,7 +338,8 @@ export function InputArea({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const isKlipMode = content.trim().toLowerCase().startsWith("@klip");
+  const trimmedLower = content.trim().toLowerCase();
+  const isKlipMode = trimmedLower.startsWith("@klip") || trimmedLower.startsWith("/klip");
   const hasUploading = pendingAttachments.some((a) => a.uploading);
   const canSend =
     (content.trim().length > 0 || pendingAttachments.some((a) => !a.uploading && !a.error)) &&
@@ -525,6 +528,36 @@ export function InputArea({
   const handleSend = useCallback(async () => {
     if (!canSend) return;
     const trimmed = content.trim();
+
+    // Detect @klip / /klip commands and route to AI handler
+    if (onKlipCommand) {
+      const lower = trimmed.toLowerCase();
+      if (lower.startsWith("@klip ") || lower === "@klip") {
+        const command = trimmed.slice(6).trim() || trimmed; // strip "@klip "
+        setContent("");
+        if (textareaRef.current) textareaRef.current.style.height = "auto";
+        setIsSending(true);
+        try {
+          await onKlipCommand({ command, isPrivate: false });
+        } finally {
+          setIsSending(false);
+        }
+        return;
+      }
+      if (lower.startsWith("/klip ") || lower === "/klip") {
+        const command = trimmed.slice(6).trim() || trimmed; // strip "/klip "
+        setContent("");
+        if (textareaRef.current) textareaRef.current.style.height = "auto";
+        setIsSending(true);
+        try {
+          await onKlipCommand({ command, isPrivate: true });
+        } finally {
+          setIsSending(false);
+        }
+        return;
+      }
+    }
+
     const attachments = pendingAttachments
       .filter((a) => !a.uploading && !a.error)
       .map((a) => a.attachment);
@@ -541,7 +574,7 @@ export function InputArea({
     } finally {
       setIsSending(false);
     }
-  }, [canSend, content, pendingAttachments, replyTo, onSendMessage, onCancelReply]);
+  }, [canSend, content, pendingAttachments, replyTo, onSendMessage, onCancelReply, onKlipCommand]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

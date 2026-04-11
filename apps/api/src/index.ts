@@ -14,6 +14,7 @@ import { uploadsRoutes } from "./routes/uploads.js";
 import { voiceRoutes } from "./routes/voice.js";
 import { premiumRoutes } from "./routes/premium.js";
 import { savedMessagesRoutes } from "./routes/savedMessages.js";
+import { klipAiRoutes } from "./routes/klipAi.js";
 import multipart from "@fastify/multipart";
 import { registerSocketHandlers } from "./socket/index.js";
 
@@ -85,6 +86,7 @@ await fastify.register(uploadsRoutes, { prefix: "/api/uploads" });
 await fastify.register(voiceRoutes, { prefix: "/api" });
 await fastify.register(premiumRoutes, { prefix: "/api/premium" });
 await fastify.register(savedMessagesRoutes, { prefix: "/api" });
+await fastify.register(klipAiRoutes, { prefix: "/api/topics" });
 
 // Health check
 fastify.get("/health", async () => ({ status: "ok", timestamp: new Date().toISOString() }));

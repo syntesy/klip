@@ -70,6 +70,11 @@ export interface MessageFeedProps {
   /** Whether the current user can save messages (Pro/Business plan) */
   canSave?: boolean;
   highlightedMessageId?: string | null;
+  /** @klip is processing a command */
+  klipThinking?: boolean;
+  /** Private /klip response to show inline (not persisted) */
+  privateKlipResponse?: string | null;
+  onClearPrivateResponse?: () => void;
 }
 
 // ─── Internal grouping types ──────────────────────────────────────────────────
@@ -651,6 +656,49 @@ function MessageRow({
     );
   }
 
+  const isAiMessage = msg.authorId === "klip-ai";
+
+  if (isAiMessage) {
+    return (
+      <div
+        id={`msg-${msg.id}`}
+        className="flex gap-[11px] px-[8px] py-[6px] rounded-[10px] mb-1"
+        style={{
+          background: "rgba(74,158,255,.04)",
+          border: "1px solid rgba(74,158,255,.12)",
+          borderLeft: "3px solid #4A9EFF",
+        }}
+      >
+        {/* AI avatar */}
+        <div
+          className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0 mt-[1px]"
+          style={{ background: "rgba(74,158,255,.15)", border: "1px solid rgba(74,158,255,.25)" }}
+        >
+          <span style={{ fontSize: 14, color: "#4A9EFF" }}>✦</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-[8px] mb-[3px]">
+            <span className="text-[13.5px] font-bold text-blue leading-none" style={{ letterSpacing: "-0.1px" }}>
+              @klip
+            </span>
+            <span className="text-[11px] text-text-3 font-mono leading-none">
+              {formatTimestamp(msg.createdAt)}
+            </span>
+            <span
+              className="text-[10px] px-[5px] py-[1px] rounded-[4px] leading-none"
+              style={{ background: "rgba(74,158,255,.1)", color: "#4A9EFF" }}
+            >
+              IA
+            </span>
+          </div>
+          <p className="text-[13.5px] text-text-2 leading-[1.6] break-words whitespace-pre-wrap">
+            {parseInline(msg.content)}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       id={`msg-${msg.id}`}
@@ -769,6 +817,67 @@ function MessageGroupBlock({
   );
 }
 
+function KlipThinkingIndicator() {
+  return (
+    <div className="flex items-center gap-[10px] px-[8px] py-[8px] mt-1">
+      <div
+        className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0"
+        style={{ background: "rgba(74,158,255,.15)", border: "1px solid rgba(74,158,255,.25)" }}
+      >
+        <span style={{ fontSize: 14, color: "#4A9EFF" }}>✦</span>
+      </div>
+      <div className="flex items-center gap-[8px]">
+        <span className="text-[13px] font-semibold text-blue">@klip</span>
+        <span className="text-[13px] text-text-3 italic">está pensando…</span>
+        <span className="flex gap-[3px]">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="w-[5px] h-[5px] rounded-full bg-blue"
+              style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
+            />
+          ))}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PrivateKlipPanel({ response, onClose }: { response: string; onClose: () => void }) {
+  return (
+    <div
+      className="mx-[8px] mb-2 rounded-[12px] p-[14px_16px]"
+      style={{
+        background: "rgba(74,158,255,.06)",
+        border: "1px solid rgba(74,158,255,.2)",
+        borderLeft: "3px solid #4A9EFF",
+      }}
+    >
+      <div className="flex items-center justify-between mb-[8px]">
+        <div className="flex items-center gap-[8px]">
+          <span style={{ fontSize: 12, color: "#4A9EFF" }}>✦</span>
+          <span className="text-[12px] font-semibold text-blue">Resposta privada do @klip</span>
+          <span
+            className="text-[10px] px-[6px] py-[1px] rounded-[4px]"
+            style={{ background: "rgba(74,158,255,.12)", color: "#4A9EFF" }}
+          >
+            só você vê
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-text-3 hover:text-text-2 leading-none text-[16px] transition-colors"
+          aria-label="Fechar resposta"
+        >
+          ×
+        </button>
+      </div>
+      <p className="text-[13px] text-text-2 leading-[1.7] whitespace-pre-wrap">{response}</p>
+    </div>
+  );
+}
+
 function TypingIndicator({ users }: { users: TypingUser[] }) {
   if (users.length === 0) return null;
 
@@ -795,6 +904,9 @@ export function MessageFeed({
   isAdmin,
   canSave,
   highlightedMessageId,
+  klipThinking,
+  privateKlipResponse,
+  onClearPrivateResponse,
 }: MessageFeedProps) {
   // Local reactions state — keyed by messageId
   const [reactionsMap, setReactionsMap] = useState<Record<string, Reaction[]>>({});
@@ -863,6 +975,14 @@ export function MessageFeed({
           </div>
         )}
       </div>
+
+      {/* Private @klip response panel */}
+      {privateKlipResponse && onClearPrivateResponse && (
+        <PrivateKlipPanel response={privateKlipResponse} onClose={onClearPrivateResponse} />
+      )}
+
+      {/* @klip thinking indicator */}
+      {klipThinking && <KlipThinkingIndicator />}
 
       {/* Typing indicator — pinned at bottom */}
       <TypingIndicator users={typingUsers} />

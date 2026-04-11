@@ -1,5 +1,7 @@
 "use client";
 
+import { useCallback, useRef } from "react";
+import { toast } from "sonner";
 import { useSavedMessage } from "@/hooks/useSavedMessage";
 
 interface SaveButtonProps {
@@ -12,12 +14,34 @@ interface SaveButtonProps {
 
 /** Bookmark button shown in MessageHoverBar for Pro/Business users. */
 export function SaveButton({ messageId, initialSaved, btnStyle, btnColor, btnHoverColor }: SaveButtonProps) {
+  const undoRef = useRef<ReturnType<typeof setTimeout>>();
   const { isSaved, isPending, toggle } = useSavedMessage(messageId, initialSaved);
+
+  const handleToggle = useCallback(async () => {
+    const wasSaved = isSaved;
+    await toggle();
+    if (wasSaved) {
+      // Show "Removido · Desfazer" toast (5s)
+      const toastId = toast("Removido da biblioteca", {
+        duration: 5000,
+        action: {
+          label: "Desfazer",
+          onClick: () => {
+            clearTimeout(undoRef.current);
+            void toggle();
+            toast.dismiss(toastId);
+          },
+        },
+      });
+    } else {
+      toast.success("Salvo na sua biblioteca", { duration: 3000 });
+    }
+  }, [isSaved, toggle]);
 
   return (
     <button
       type="button"
-      onClick={() => void toggle()}
+      onClick={() => void handleToggle()}
       disabled={isPending}
       title={isSaved ? "Remover da biblioteca" : "Salvar na biblioteca"}
       style={{
