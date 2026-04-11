@@ -20,14 +20,31 @@ const SERVER_API_URL =
 export default async function InvitePage({ params }: Props) {
   const { code } = params;
 
+  // ── DEBUG — remove after diagnosis ───────────────────────────────────────
+  const dbUrl = process.env.DATABASE_URL;
+  console.log("=== CONVITE DEBUG ===");
+  console.log("code recebido:", code);
+  console.log("DATABASE_URL definida:", !!dbUrl);
+  console.log("DATABASE_URL (início):", dbUrl ? dbUrl.slice(0, 30) + "…" : "AUSENTE");
+  console.log("SERVER_API_URL:", SERVER_API_URL);
+  // ─────────────────────────────────────────────────────────────────────────
+
   // ── 1. Fetch invite directly from DB — no HTTP round-trip ────────────────
-  const [invite] = await db
-    .select()
-    .from(invites)
-    .where(or(eq(invites.slug, code), eq(invites.code, code)))
-    .limit(1);
+  let invite: typeof invites.$inferSelect | undefined;
+  try {
+    [invite] = await db
+      .select()
+      .from(invites)
+      .where(or(eq(invites.slug, code), eq(invites.code, code)))
+      .limit(1);
+    console.log("resultado query:", JSON.stringify(invite ?? null));
+  } catch (err) {
+    console.error("ERRO na query do convite:", err instanceof Error ? err.message : String(err));
+    return <NotFound reason="not-found" />;
+  }
 
   if (!invite) {
+    console.log("Convite não encontrado para code:", code);
     return <NotFound reason="not-found" />;
   }
 
