@@ -5,6 +5,15 @@
 @layer base {
   * {
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    overscroll-behavior: none;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
   }
 
   body {
@@ -180,5 +189,9 @@
   @keyframes bounce {
     0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
     40% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 }

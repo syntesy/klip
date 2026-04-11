@@ -12,8 +12,10 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Klip — Sua comunidade, organizada pela IA",
   description: "A comunidade que se organiza sozinha.",
-  icons: {
-    icon: "/favicon.svg",
+  icons: { icon: "/favicon.svg" },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
   },
 };
 
@@ -23,6 +25,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  themeColor: "#08111f",
 };
 
 const hasClerkKey = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
