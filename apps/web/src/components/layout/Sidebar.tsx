@@ -244,9 +244,7 @@ function CommunityList({
       ) : (
         communities.map((community) => {
           const active = pathname.startsWith(`/communities/${community.id}`) &&
-            !pathname.includes("/biblioteca") &&
             !pathname.includes("/premium");
-          const bibliotecaActive = pathname === `/communities/${community.id}/biblioteca`;
           const premiumActive = pathname === `/communities/${community.id}/premium`;
           return (
             <div key={community.id}>
@@ -269,22 +267,6 @@ function CommunityList({
                     aria-label="mensagens não lidas"
                   />
                 )}
-              </Link>
-              {/* Sala Premium sub-item */}
-              <Link
-                href={`/communities/${community.id}/biblioteca`}
-                aria-current={bibliotecaActive ? "page" : undefined}
-                className={cn(
-                  "flex items-center gap-[7px] pl-[32px] pr-[10px] py-[4px] rounded-[7px] text-[12px] mb-[1px] no-underline",
-                  "transition-colors duration-[120ms]",
-                  bibliotecaActive
-                    ? "font-semibold bg-bg-surface shadow-[0_1px_4px_rgba(0,0,0,.07)]"
-                    : "font-normal text-text-3 bg-transparent hover:bg-[var(--color-sidebar-hover)] hover:text-text-2"
-                )}
-                style={{ color: bibliotecaActive ? "var(--color-blue-bright)" : undefined }}
-              >
-                <span style={{ fontSize: 11, color: "var(--color-blue-bright)" }}>✦</span>
-                <span>Sala Premium</span>
               </Link>
               {/* Área Premium sub-item */}
               <Link

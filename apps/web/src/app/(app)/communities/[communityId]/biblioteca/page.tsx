@@ -1,8 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
-import { notFound } from "next/navigation";
 import Link from "next/link";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 interface ContentItem {
   id: string;
@@ -15,19 +11,6 @@ interface ContentItem {
   createdBy: string;
   createdAt: string;
   publishedAt: string;
-}
-
-async function apiFetch(path: string, token: string) {
-  try {
-    const res = await fetch(`${API_URL}${path}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
 }
 
 function timeAgo(dateStr: string): string {
@@ -45,19 +28,7 @@ interface Props {
 
 export default async function BibliotecaPage({ params }: Props) {
   const { communityId } = await params;
-
-  const { getToken } = await auth();
-  const token = await getToken();
-  if (!token) notFound();
-
-  const [items, memberData] = await Promise.all([
-    apiFetch(`/api/extrair/biblioteca/${communityId}`, token),
-    apiFetch(`/api/communities/${communityId}/me`, token),
-  ]);
-
-  const contents: ContentItem[] = items ?? [];
-  const userRole: string = (memberData as { role?: string } | null)?.role ?? "member";
-  const isPremium = userRole === "owner" || userRole === "moderator";
+  const contents: ContentItem[] = [];
 
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-bg-page">
@@ -91,15 +62,9 @@ export default async function BibliotecaPage({ params }: Props) {
             <p className="text-[15px] font-semibold text-text-2 mb-[6px]">
               Nenhum conteúdo publicado ainda
             </p>
-            {isPremium ? (
-              <p className="text-[13px] text-text-3 max-w-xs">
-                Use o botão <strong>✦ Extrair</strong> em qualquer mensagem do tópico para gerar e publicar conteúdo.
-              </p>
-            ) : (
-              <p className="text-[13px] text-text-3 max-w-xs">
-                Os moderadores ainda não publicaram nenhum conteúdo nesta sala.
-              </p>
-            )}
+            <p className="text-[13px] text-text-3 max-w-xs">
+              Os moderadores ainda não publicaram nenhum conteúdo nesta sala.
+            </p>
           </div>
         )}
 

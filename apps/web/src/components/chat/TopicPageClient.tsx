@@ -8,8 +8,6 @@ import { TopicHeader, type TopicMeta, type PinnedMessage } from "@/components/ch
 import { TopicChatArea } from "@/components/chat/TopicChatArea";
 import { TopicList, type TopicItem } from "@/components/chat/TopicList";
 import { NewTopicModal } from "@/components/communities/NewTopicButton";
-import { ExtrairPanel } from "@/components/extrair/ExtrairPanel";
-import { MakePremiumModal } from "@/components/premium/MakePremiumModal";
 import type { Message } from "@/components/chat/MessageFeed";
 import type { TopicSummary } from "@/hooks/useTopicSocket";
 
@@ -131,7 +129,7 @@ interface TopicPageClientProps {
   initialTopics: TopicItem[];
   initialMessages: Message[];
   initialSummary: TopicSummary | null;
-  canExtrair?: boolean;
+  isAdmin?: boolean;
   canSave?: boolean;
 }
 
@@ -190,7 +188,7 @@ export function TopicPageClient({
   initialTopics,
   initialMessages,
   initialSummary,
-  canExtrair = false,
+  isAdmin = false,
   canSave = false,
 }: TopicPageClientProps) {
   const { getToken } = useAuth();
@@ -198,10 +196,6 @@ export function TopicPageClient({
   const [newTopicOpen, setNewTopicOpen] = useState(false);
   const [decisionsOpen, setDecisionsOpen] = useState(false);
   const [summary, setSummary] = useState<TopicSummary | null>(initialSummary);
-  const [extrairMessages, setExtrairMessages] = useState<Message[]>([]);
-  const [extrairOpen, setExtrairOpen] = useState(false);
-  const [premiumMessage, setPremiumMessage] = useState<Message | null>(null);
-
   // Pinned message state — initialized from server data
   const [pinnedMessage, setPinnedMessage] = useState<PinnedMessage | null>(
     topic.pinnedMessageId && topic.pinnedMessageContent && topic.pinnedMessageAuthor
@@ -367,7 +361,7 @@ export function TopicPageClient({
           onSearchOpen={handleSearchOpen}
           onSearchClose={handleSearchClose}
           onSearchChange={handleSearchChange}
-          isHost={canExtrair}
+          isHost={isAdmin}
           activeVoiceSession={activeVoiceSession}
           onStartVoice={() => setShowVoiceConfirm(true)}
           onEndVoice={() => setActiveVoiceSession(false)}
@@ -390,13 +384,8 @@ export function TopicPageClient({
             onConnectionChange={setIsConnected}
             onMount={handleMount}
             onSummaryChange={setSummary}
-            canExtrair={canExtrair}
+            isAdmin={isAdmin}
             canSave={canSave}
-            onExtrair={(msg) => {
-              setExtrairMessages([msg]);
-              setExtrairOpen(true);
-            }}
-            {...(canExtrair ? { onMakePremium: (msg: Message) => setPremiumMessage(msg) } : {})}
             onPin={(msg) => void handlePin(msg)}
             {...(highlightedMessageId ? { highlightedMessageId } : {})}
           />
@@ -425,23 +414,7 @@ export function TopicPageClient({
           onClose={() => setDecisionsOpen(false)}
         />
       )}
-      {extrairOpen && (
-        <ExtrairPanel
-          topicId={topicId}
-          communityId={communityId}
-          topicTitle={topic.title}
-          selectedMessages={extrairMessages}
-          onClose={() => setExtrairOpen(false)}
-        />
-      )}
-      {premiumMessage && (
-        <MakePremiumModal
-          message={premiumMessage}
-          communityId={communityId}
-          onClose={() => setPremiumMessage(null)}
-          onSuccess={() => setPremiumMessage(null)}
-        />
-      )}
+
     </div>
   );
 }

@@ -97,13 +97,13 @@ export default async function TopicPage({ params }: Props) {
     : null;
 
   const userRole: string = (memberData as { role?: string } | null)?.role ?? "member";
-  const canExtrair = userRole === "owner" || userRole === "moderator";
+  const isAdmin = userRole === "owner" || userRole === "moderator";
   const userPlan = (clerkUser?.publicMetadata?.["plan"] as string | undefined) ?? "starter";
   const canSave = userPlan === "pro" || userPlan === "business";
 
   return (
     <div className="flex flex-col h-full">
-      {canExtrair && (
+      {isAdmin && (
         <div className="flex justify-end px-4 pt-3 shrink-0">
           <DeleteTopicButton topicId={topicId} communityId={communityId} topicTitle={topic.title} />
         </div>
@@ -115,7 +115,7 @@ export default async function TopicPage({ params }: Props) {
         initialTopics={topics}
         initialMessages={messages}
         initialSummary={summary}
-        canExtrair={canExtrair}
+        isAdmin={isAdmin}
         canSave={canSave}
       />
     </div>

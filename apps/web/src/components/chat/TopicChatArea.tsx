@@ -29,10 +29,8 @@ export interface TopicChatAreaProps {
   onMount?: (handlers: { requestSummary: () => Promise<void> }) => void;
   /** Called whenever the summary changes (API response or socket push) */
   onSummaryChange?: (s: TopicSummary | null) => void;
-  canExtrair?: boolean;
+  isAdmin?: boolean;
   canSave?: boolean;
-  onExtrair?: (msg: Message) => void;
-  onMakePremium?: (msg: Message) => void;
   onPin?: (msg: Message) => void;
   highlightedMessageId?: string | null;
 }
@@ -76,10 +74,8 @@ function TopicChatAreaInner({
   onConnectionChange,
   onMount,
   onSummaryChange,
-  canExtrair,
+  isAdmin,
   canSave,
-  onExtrair,
-  onMakePremium,
   onPin,
   highlightedMessageId,
   userId,
@@ -339,10 +335,8 @@ function TopicChatAreaInner({
         typingUsers={typingUsers.map((u) => ({ userId: u.userId, name: u.name }))}
         onKlipMessage={handleKlipMessage}
         onReply={handleReply}
-        canExtrair={canExtrair ?? false}
+        isAdmin={isAdmin ?? false}
         canSave={canSave ?? false}
-        {...(onExtrair ? { onExtrair } : {})}
-        {...(onMakePremium ? { onMakePremium } : {})}
         {...(onPin ? { onPin } : {})}
         {...(highlightedMessageId ? { highlightedMessageId } : {})}
       />

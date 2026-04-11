@@ -64,10 +64,9 @@ export interface MessageFeedProps {
   typingUsers?: TypingUser[];
   onKlipMessage?: (messageId: string) => void;
   onReply?: (message: Message) => void;
-  onExtrair?: (message: Message) => void;
   onPin?: (message: Message) => void;
-  onMakePremium?: (message: Message) => void;
-  canExtrair?: boolean;
+  /** Whether the current user is an admin (owner/moderator) — gates Klipar */
+  isAdmin?: boolean;
   /** Whether the current user can save messages (Pro/Business plan) */
   canSave?: boolean;
   highlightedMessageId?: string | null;
@@ -462,23 +461,19 @@ function MessageHoverBar({
   msg,
   onKlip,
   onReply,
-  onExtrair,
-  canExtrair,
   canSave,
   onReactionsChange,
   onPin,
-  onMakePremium,
+  isAdmin,
   isDark,
 }: {
   msg: Message;
   onKlip?: () => void;
   onReply?: () => void;
-  onExtrair?: () => void;
-  canExtrair?: boolean;
   canSave?: boolean;
   onReactionsChange?: (messageId: string, next: Reaction[]) => void;
   onPin?: (msg: Message) => void;
-  onMakePremium?: (msg: Message) => void;
+  isAdmin?: boolean;
   isDark: boolean;
 }) {
   const { getToken } = useAuth();
@@ -563,7 +558,7 @@ function MessageHoverBar({
           </button>
         )}
 
-        {canExtrair && onKlip && (
+        {isAdmin && onKlip && (
           <button
             type="button"
             onClick={onKlip}
@@ -601,31 +596,6 @@ function MessageHoverBar({
             </svg>
           </button>
         )}
-
-        {canExtrair && onExtrair && (
-          <button
-            type="button"
-            onClick={onExtrair}
-            style={btnStyle}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#4A9EFF"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = btnColor; }}
-          >
-            ✦ Extrair
-          </button>
-        )}
-
-        {canExtrair && onMakePremium && (
-          <button
-            type="button"
-            onClick={() => onMakePremium(msg)}
-            style={btnStyle}
-            title="Tornar premium"
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#F5C842"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = btnColor; }}
-          >
-            ⭐ Premium
-          </button>
-        )}
       </div>
     </div>
   );
@@ -652,12 +622,10 @@ function MessageRow({
   isOwn,
   onKlip,
   onReply,
-  onExtrair,
-  canExtrair,
+  isAdmin,
   canSave,
   onReactionsChange,
   onPin,
-  onMakePremium,
   isHighlighted,
 }: {
   msg: Message;
@@ -665,12 +633,10 @@ function MessageRow({
   isOwn: boolean;
   onKlip?: (messageId: string) => void;
   onReply?: (msg: Message) => void;
-  onExtrair?: (msg: Message) => void;
-  canExtrair?: boolean;
+  isAdmin?: boolean;
   canSave?: boolean;
   onReactionsChange?: (messageId: string, next: Reaction[]) => void;
   onPin?: (msg: Message) => void;
-  onMakePremium?: (msg: Message) => void;
   isHighlighted?: boolean;
 }) {
   const { theme, mounted } = useDarkMode();
@@ -754,12 +720,10 @@ function MessageRow({
         isDark={isDark}
         {...(onKlip ? { onKlip: () => onKlip(msg.id) } : {})}
         {...(onReply ? { onReply: () => onReply(msg) } : {})}
-        {...(onExtrair ? { onExtrair: () => onExtrair(msg) } : {})}
-        canExtrair={canExtrair ?? false}
+        isAdmin={isAdmin ?? false}
         canSave={canSave ?? false}
         {...(onReactionsChange ? { onReactionsChange } : {})}
         {...(onPin ? { onPin } : {})}
-        {...(onMakePremium ? { onMakePremium } : {})}
       />
     </div>
   );
@@ -769,23 +733,19 @@ function MessageGroupBlock({
   group,
   onKlip,
   onReply,
-  onExtrair,
-  canExtrair,
+  isAdmin,
   canSave,
   onReactionsChange,
   onPin,
-  onMakePremium,
   highlightedMessageId,
 }: {
   group: MessageGroup;
   onKlip?: (messageId: string) => void;
   onReply?: (msg: Message) => void;
-  onExtrair?: (msg: Message) => void;
-  canExtrair?: boolean;
+  isAdmin?: boolean;
   canSave?: boolean;
   onReactionsChange?: (messageId: string, next: Reaction[]) => void;
   onPin?: (msg: Message) => void;
-  onMakePremium?: (msg: Message) => void;
   highlightedMessageId?: string | null;
 }) {
   return (
@@ -798,12 +758,10 @@ function MessageGroupBlock({
           isOwn={false}
           {...(onKlip ? { onKlip } : {})}
           {...(onReply ? { onReply } : {})}
-          {...(onExtrair ? { onExtrair } : {})}
-          canExtrair={canExtrair ?? false}
+          isAdmin={isAdmin ?? false}
           canSave={canSave ?? false}
           {...(onReactionsChange ? { onReactionsChange } : {})}
           {...(onPin ? { onPin } : {})}
-          {...(onMakePremium ? { onMakePremium } : {})}
           isHighlighted={highlightedMessageId === msg.id}
         />
       ))}
@@ -833,10 +791,8 @@ export function MessageFeed({
   typingUsers = [],
   onKlipMessage,
   onReply,
-  onExtrair,
   onPin,
-  onMakePremium,
-  canExtrair,
+  isAdmin,
   canSave,
   highlightedMessageId,
 }: MessageFeedProps) {
@@ -875,12 +831,10 @@ export function MessageFeed({
                 group={group}
                 {...(onKlipMessage ? { onKlip: onKlipMessage } : {})}
                 {...(onReply ? { onReply } : {})}
-                {...(onExtrair ? { onExtrair } : {})}
-                canExtrair={canExtrair ?? false}
+                isAdmin={isAdmin ?? false}
                 canSave={canSave ?? false}
                 onReactionsChange={handleReactionsChange}
                 {...(onPin ? { onPin } : {})}
-                {...(onMakePremium ? { onMakePremium } : {})}
                 {...(highlightedMessageId ? { highlightedMessageId } : {})}
               />
             ))}
