@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Attachment } from "@/hooks/useTopicSocket";
 
 interface Props {
@@ -9,7 +9,16 @@ interface Props {
 
 export function AttachmentImage({ attachment }: Props) {
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
   const [lightbox, setLightbox] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // Handle cached images: if the browser already has the image, onLoad won't fire
+  useEffect(() => {
+    if (imgRef.current?.complete) {
+      setLoaded(true);
+    }
+  }, []);
 
   return (
     <>
@@ -22,25 +31,35 @@ export function AttachmentImage({ attachment }: Props) {
         style={{ width: 300, maxWidth: "100%" }}
       >
         {/* Placeholder while loading */}
-        {!loaded && (
+        {!loaded && !error && (
           <div
             className="animate-pulse bg-bg-subtle rounded-lg"
             style={{ width: 300, height: 180, maxWidth: "100%" }}
           />
         )}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={attachment.url}
-          alt={attachment.name}
-          loading="lazy"
-          onLoad={() => setLoaded(true)}
-          className="rounded-lg object-cover"
-          style={{
-            maxWidth: 300,
-            maxHeight: 300,
-            display: loaded ? "block" : "none",
-          }}
-        />
+        {error ? (
+          <div
+            className="flex items-center justify-center bg-bg-subtle rounded-lg text-text-3 text-[12px]"
+            style={{ width: 300, height: 120 }}
+          >
+            Imagem indisponível
+          </div>
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            ref={imgRef}
+            src={attachment.url}
+            alt={attachment.name}
+            onLoad={() => setLoaded(true)}
+            onError={() => { setLoaded(true); setError(true); }}
+            className="rounded-lg object-cover"
+            style={{
+              maxWidth: 300,
+              maxHeight: 300,
+              display: loaded ? "block" : "none",
+            }}
+          />
+        )}
       </button>
 
       {/* Lightbox */}
