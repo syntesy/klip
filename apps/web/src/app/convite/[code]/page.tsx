@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { AcceptInviteClient } from "./AcceptInviteClient";
 
 interface Props {
-  params: { code: string };
+  params: Promise<{ code: string }>;
 }
 
 interface InviteData {
@@ -26,7 +26,7 @@ const API_URL =
   "http://localhost:3001";
 
 export default async function InvitePage({ params }: Props) {
-  const { code } = params;
+  const { code } = await params;
 
   console.log("=== CONVITE DEBUG ===");
   console.log("code recebido:", code);
