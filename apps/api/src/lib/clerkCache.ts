@@ -7,7 +7,17 @@ interface CachedName {
 
 const TTL_MS = 5 * 60 * 1000; // 5 minutes
 const FETCH_TIMEOUT_MS = 5_000; // 5 seconds — Clerk must respond within this window
+const MAX_CACHE_SIZE = 1_000; // hard cap — evict oldest insertion when exceeded
 const cache = new Map<string, CachedName>();
+
+function cacheSet(userId: string, entry: CachedName): void {
+  if (cache.size >= MAX_CACHE_SIZE) {
+    // Map preserves insertion order — delete the oldest entry
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) cache.delete(oldest);
+  }
+  cache.set(userId, entry);
+}
 
 // Purge expired entries every 10 minutes to prevent unbounded Map growth
 // in long-running processes with high user cardinality.
@@ -44,7 +54,7 @@ export async function getClerkDisplayName(userId: string): Promise<string> {
       user.firstName ??
       user.emailAddresses[0]?.emailAddress ??
       userId;
-    cache.set(userId, { name, exp: now + TTL_MS });
+    cacheSet(userId, { name, exp: now + TTL_MS });
     return name;
   } catch (err) {
     // Non-fatal: return userId as fallback; don't cache the failure so next request retries
@@ -91,7 +101,7 @@ export async function bulkGetClerkDisplayNames(
         u.emailAddresses[0]?.emailAddress ??
         u.id;
       result.set(u.id, name);
-      cache.set(u.id, { name, exp: now + TTL_MS });
+      cacheSet(u.id, { name, exp: now + TTL_MS });
     }
   } catch {
     // Non-fatal: missing entries will fall back to userId below

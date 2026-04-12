@@ -216,7 +216,8 @@ Seja conciso e objetivo. Use markdown.`,
       anthropicCircuitBreaker.onSuccess();
     } catch (err) {
       anthropicCircuitBreaker.onFailure();
-      fastify.log.error({ err }, "Anthropic API call failed");
+      const e = err instanceof Error ? err : new Error(String(err));
+      fastify.log.error({ message: e.message, name: e.name }, "Anthropic API call failed");
       return reply.status(503).send({ error: "Falha ao contatar serviço de IA. Tente novamente." });
     }
 

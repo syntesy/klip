@@ -6,6 +6,11 @@ import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
 import { Redis } from "ioredis";
 import type { IncomingMessage, ServerResponse, Server as NodeServer } from "node:http";
+import type {
+  ClientToServerEvents,
+  ServerToClientEvents,
+  SocketData,
+} from "./socket/index.js";
 import { communitiesRoutes } from "./routes/communities.js";
 import { topicsRoutes } from "./routes/topics.js";
 import { messagesRoutes } from "./routes/messages.js";
@@ -97,7 +102,7 @@ fastify.get("/health", async () => ({ status: "ok", timestamp: new Date().toISOS
 // Attach after fastify.ready() so fastify.server is a plain HTTP server
 await fastify.ready();
 
-const io = new Server(
+const io = new Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>(
   fastify.server as NodeServer<typeof IncomingMessage, typeof ServerResponse>,
   { cors: { origin: WEB_ORIGINS, credentials: true } }
 );

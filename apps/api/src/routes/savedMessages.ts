@@ -17,11 +17,17 @@ type UserPlan = "starter" | "pro" | "business";
 
 async function getUserPlan(clerkUserId: string): Promise<UserPlan> {
   try {
-    const user = await clerkClient.users.getUser(clerkUserId);
+    const user = await Promise.race([
+      clerkClient.users.getUser(clerkUserId),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("plan fetch timeout")), 5_000)
+      ),
+    ]);
     const plan = user.publicMetadata?.["plan"] as string | undefined;
     if (plan === "pro" || plan === "business") return plan;
     return "starter";
   } catch {
+    // Fail closed: treat timeout/error as starter (no access granted)
     return "starter";
   }
 }
@@ -132,7 +138,11 @@ export async function savedMessagesRoutes(fastify: FastifyInstance) {
       // Build filters
       const filters = [eq(savedMessages.clerkUserId, req.userId)];
       if (cursor) {
-        filters.push(lt(savedMessages.savedAt, new Date(cursor)));
+        const cursorDate = new Date(cursor);
+        if (isNaN(cursorDate.getTime())) {
+          return reply.status(400).send({ error: "invalid cursor" });
+        }
+        filters.push(lt(savedMessages.savedAt, cursorDate));
       }
 
       // Join: saved_messages → messages → topics → communities

@@ -111,7 +111,8 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
           displayName: communityMembers.displayName,
         })
         .from(communityMembers)
-        .where(eq(communityMembers.communityId, req.params.id));
+        .where(eq(communityMembers.communityId, req.params.id))
+        .limit(500);
 
       return rows;
     }
@@ -151,7 +152,8 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
       return reply.status(201).send(community);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      fastify.log.error({ err }, "POST /api/communities failed");
+      const e = err instanceof Error ? err : new Error(String(err));
+      fastify.log.error({ message: e.message, name: e.name }, "POST /api/communities failed");
 
       if (msg.includes("communities_slug_unique") || msg.includes("duplicate key")) {
         return reply.status(409).send({ error: "Esse slug já está em uso. Tente outro." });

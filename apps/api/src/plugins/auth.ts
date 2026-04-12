@@ -7,6 +7,17 @@ if (!CLERK_SECRET_KEY) {
   throw new Error("CLERK_SECRET_KEY environment variable is required");
 }
 
+const VERIFY_TIMEOUT_MS = 5_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`verifyToken timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
 export async function requireAuth(
   req: FastifyRequest,
   reply: FastifyReply
@@ -21,7 +32,10 @@ export async function requireAuth(
   const token = authHeader.slice(7);
 
   try {
-    const result = await verifyToken(token, { secretKey: CLERK_SECRET_KEY });
+    const result = await withTimeout(
+      verifyToken(token, { secretKey: CLERK_SECRET_KEY! }),
+      VERIFY_TIMEOUT_MS
+    );
     req.userId = result.sub;
   } catch {
     reply.status(401).send({ error: "Invalid token" });

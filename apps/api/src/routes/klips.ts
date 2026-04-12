@@ -20,7 +20,8 @@ export async function klipsRoutes(fastify: FastifyInstance) {
       .innerJoin(messages, eq(klips.messageId, messages.id))
       .innerJoin(topics, eq(messages.topicId, topics.id))
       .where(and(eq(klips.userId, req.userId), isNull(messages.deletedAt)))
-      .orderBy(desc(klips.createdAt));
+      .orderBy(desc(klips.createdAt))
+      .limit(200);
 
     return rows.map(({ klip, message, communityId }) => ({
       klip,

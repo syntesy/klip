@@ -293,7 +293,8 @@ export async function messagesRoutes(fastify: FastifyInstance) {
         getIo().to(`topic:${message.topicId}`).emit("message:deleted", req.params.id);
       } catch (err) {
         // io not yet initialized (test environment) or socket error — DB update already committed
-        fastify.log.warn({ err }, "message:deleted socket emit failed");
+        const e = err instanceof Error ? err : new Error(String(err));
+        fastify.log.warn({ message: e.message }, "message:deleted socket emit failed");
       }
 
       return reply.status(204).send();
@@ -323,7 +324,8 @@ export async function messagesRoutes(fastify: FastifyInstance) {
         if (msg.includes("message_reactions_unique") || msg.includes("duplicate key")) {
           return reply.status(409).send({ error: "already reacted" });
         }
-        fastify.log.error({ err }, "POST /:id/reactions failed");
+        const e = err instanceof Error ? err : new Error(String(err));
+        fastify.log.error({ message: e.message, name: e.name }, "POST /:id/reactions failed");
         return reply.status(500).send({ error: "Internal error" });
       }
     }
@@ -365,7 +367,8 @@ export async function messagesRoutes(fastify: FastifyInstance) {
       const rows = await db
         .select()
         .from(messageReactions)
-        .where(eq(messageReactions.messageId, req.params.id));
+        .where(eq(messageReactions.messageId, req.params.id))
+        .limit(100);
       return rows;
     }
   );

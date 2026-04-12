@@ -3,7 +3,7 @@ import { requireAuth } from "../plugins/auth.js";
 import { db } from "../lib/db.js";
 import { bulkGetClerkDisplayNames } from "../lib/clerkCache.js";
 import { topics, communityMembers, messages } from "@klip/db/schema";
-import { eq, and, desc, ilike, isNull } from "drizzle-orm";
+import { eq, and, desc, ilike, isNull, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 const createTopicSchema = z.object({
@@ -50,7 +50,8 @@ export async function topicsRoutes(fastify: FastifyInstance) {
         .select()
         .from(topics)
         .where(and(eq(topics.communityId, communityId), eq(topics.status, "active")))
-        .orderBy(desc(topics.isPinned), desc(topics.lastActivityAt));
+        .orderBy(desc(topics.isPinned), desc(topics.lastActivityAt))
+        .limit(200);
     }
   );
 
@@ -285,11 +286,17 @@ export async function topicsRoutes(fastify: FastifyInstance) {
 
       if (rows.length === 0) return [];
 
-      // Resolve author names from the community member cache
+      // Resolve author names — only fetch members whose IDs appear in the result set
+      const resultAuthorIds = [...new Set(rows.map((r) => r.authorId))];
       const memberRows = await db
         .select({ userId: communityMembers.userId, displayName: communityMembers.displayName })
         .from(communityMembers)
-        .where(eq(communityMembers.communityId, topic.communityId));
+        .where(
+          and(
+            eq(communityMembers.communityId, topic.communityId),
+            inArray(communityMembers.userId, resultAuthorIds)
+          )
+        );
 
       const memberNameMap = new Map<string, string>(
         memberRows

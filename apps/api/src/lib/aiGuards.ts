@@ -43,10 +43,12 @@ setInterval(() => {
 }, 120_000).unref();
 
 // ─── Circuit breaker ──────────────────────────────────────────────────────────
-// CLOSED → (5 failures) → OPEN → (60s timeout) → HALF_OPEN → CLOSED/OPEN
+// CLOSED → (5 failures) → OPEN → (exponential backoff) → HALF_OPEN → CLOSED/OPEN
+// Reset timeout doubles on each consecutive open: 60s → 120s → 240s … capped at 10min
 
 const CB_FAILURE_THRESHOLD = 5;
-const CB_RESET_TIMEOUT_MS = 60_000;
+const CB_BASE_RESET_MS = 60_000;
+const CB_MAX_RESET_MS = 600_000; // 10 minutes
 
 type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
 
@@ -54,10 +56,15 @@ class CircuitBreaker {
   state: CircuitState = "CLOSED";
   failures = 0;
   openedAt = 0;
+  openCount = 0; // consecutive open cycles — drives backoff exponent
+
+  private resetTimeout(): number {
+    return Math.min(CB_BASE_RESET_MS * Math.pow(2, this.openCount - 1), CB_MAX_RESET_MS);
+  }
 
   isOpen(): boolean {
     if (this.state === "CLOSED" || this.state === "HALF_OPEN") return false;
-    if (Date.now() - this.openedAt >= CB_RESET_TIMEOUT_MS) {
+    if (Date.now() - this.openedAt >= this.resetTimeout()) {
       this.state = "HALF_OPEN";
       return false;
     }
@@ -66,12 +73,14 @@ class CircuitBreaker {
 
   onSuccess(): void {
     this.failures = 0;
+    this.openCount = 0;
     this.state = "CLOSED";
   }
 
   onFailure(): void {
     this.failures += 1;
     if (this.state === "HALF_OPEN" || this.failures >= CB_FAILURE_THRESHOLD) {
+      this.openCount += 1;
       this.state = "OPEN";
       this.openedAt = Date.now();
     }
@@ -82,9 +91,14 @@ class CircuitBreaker {
 export const anthropicCircuitBreaker = new CircuitBreaker();
 
 // ─── XSS sanitization ────────────────────────────────────────────────────────
-// Strip all HTML tags from AI-generated markdown before storing or returning.
-// Prevents script injection if the content is rendered as HTML in the browser.
+// Strip HTML tags and escape any residual angle brackets from AI-generated
+// markdown before storing or returning. Defense-in-depth: even if tag stripping
+// misses a malformed tag (e.g. nested or split tags), leftover `<` / `>` are
+// rendered as text by the browser rather than executed as HTML.
 
 export function sanitizeMarkdown(text: string): string {
-  return text.replace(/<[^>]+>/g, "");
+  // 1. Strip well-formed tags
+  const stripped = text.replace(/<[^>]*>/g, "");
+  // 2. Escape any remaining angle brackets so they can't form tags
+  return stripped.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

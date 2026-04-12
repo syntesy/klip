@@ -42,7 +42,23 @@ const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25 MB
 export async function uploadsRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/",
-    { preHandler: requireAuth, config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    {
+      preHandler: requireAuth,
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute",
+          // Key by userId (set by requireAuth) so the limit is per-user, not per-IP.
+          // Falls back to IP if userId is somehow absent (should never happen post-auth).
+          keyGenerator: (req) => (req as typeof req & { userId?: string }).userId ?? req.ip,
+          errorResponseBuilder: () => ({
+            statusCode: 429,
+            error: "Too Many Requests",
+            message: "Limite de upload atingido. Aguarde 1 minuto.",
+          }),
+        },
+      },
+    },
     async (req, reply) => {
       // @fastify/multipart must be registered on the instance
       const part = await req.file();

@@ -241,7 +241,8 @@ export async function invitesRoutes(fastify: FastifyInstance) {
           // Race condition: another concurrent request inserted the member first
           return { communityId: undefined, alreadyMember: true };
         }
-        fastify.log.error({ err }, "POST /api/invites/:code/accept failed");
+        const e = err instanceof Error ? err : new Error(String(err));
+        fastify.log.error({ message: e.message, name: e.name }, "POST /api/invites/:code/accept failed");
         return reply.status(500).send({ error: "Internal error" });
       }
     }

@@ -3,7 +3,7 @@ import { RoomServiceClient, AccessToken } from "livekit-server-sdk";
 import { requireAuth } from "../plugins/auth.js";
 import { getClerkDisplayName } from "../lib/clerkCache.js";
 import { db } from "../lib/db.js";
-import { getIo } from "../lib/io.js";
+import { tryEmit } from "../lib/io.js";
 import { voiceSessions, communityMembers, topics } from "@klip/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -74,14 +74,15 @@ export async function voiceRoutes(fastify: FastifyInstance) {
         const msg = err instanceof Error ? err.message : String(err);
         const alreadyExists = msg.toLowerCase().includes("already exist") || msg.includes("409");
         if (!alreadyExists) {
-          fastify.log.error({ err }, "LiveKit createRoom failed — ending DB session to unblock future /start");
+          const e = err instanceof Error ? err : new Error(String(err));
+          fastify.log.error({ message: e.message, name: e.name }, "LiveKit createRoom failed — ending DB session to unblock future /start");
           await db
             .update(voiceSessions)
             .set({ status: "ended", endedAt: new Date() })
             .where(eq(voiceSessions.id, session.id));
           return reply.status(503).send({ error: "Falha ao criar sala de voz. Tente novamente." });
         }
-        fastify.log.warn({ err }, "LiveKit createRoom — room already exists, reusing");
+        fastify.log.warn({ message: (err instanceof Error ? err.message : String(err)) }, "LiveKit createRoom — room already exists, reusing");
       }
 
       // Host token (publish + subscribe) — 2h TTL
@@ -92,8 +93,8 @@ export async function voiceRoutes(fastify: FastifyInstance) {
       // Resolve host display name (cached)
       const hostName = await getClerkDisplayName(req.userId);
 
-      // Notify all topic members via socket
-      getIo().to(`topic:${topicId}`).emit("voice:started", {
+      // Notify all topic members via socket — non-fatal if socket not ready
+      tryEmit(`topic:${topicId}`, "voice:started", {
         sessionId: session.id,
         hostName,
         hostClerkId: req.userId,
@@ -169,7 +170,7 @@ export async function voiceRoutes(fastify: FastifyInstance) {
 
       const userName = await getClerkDisplayName(req.userId);
 
-      getIo().to(`user:${session.hostClerkId}`).emit("voice:hand-raised", {
+      tryEmit(`user:${session.hostClerkId}`, "voice:hand-raised", {
         clerkUserId: req.userId,
         userName,
         sessionId,
@@ -207,7 +208,7 @@ export async function voiceRoutes(fastify: FastifyInstance) {
         canSubscribe: true,
       });
 
-      getIo().to(`user:${participantIdentity}`).emit("voice:speak-granted", { sessionId });
+      tryEmit(`user:${participantIdentity}`, "voice:speak-granted", { sessionId });
 
       return { ok: true };
     }
@@ -277,7 +278,7 @@ export async function voiceRoutes(fastify: FastifyInstance) {
       try {
         await roomService.deleteRoom(session.livekitRoomName);
       } catch (err) {
-        fastify.log.warn({ err }, "deleteRoom failed — room may already be closed by LiveKit");
+        fastify.log.warn({ message: (err instanceof Error ? err.message : String(err)) }, "deleteRoom failed — room may already be closed by LiveKit");
       }
 
       await db
@@ -285,7 +286,7 @@ export async function voiceRoutes(fastify: FastifyInstance) {
         .set({ status: "ended", endedAt: new Date() })
         .where(eq(voiceSessions.id, session.id));
 
-      getIo().to(`topic:${topicId}`).emit("voice:ended", { sessionId: session.id });
+      tryEmit(`topic:${topicId}`, "voice:ended", { sessionId: session.id });
 
       return { ok: true };
     }

@@ -79,6 +79,8 @@ type KlipSocket = Socket<ClientToServerEvents, ServerToClientEvents, Record<stri
 
 // ─── Auth middleware ──────────────────────────────────────────────────────────
 
+const SOCKET_VERIFY_TIMEOUT_MS = 5_000;
+
 export function setupSocketAuth(io: KlipServer): void {
   io.use(async (socket, next) => {
     const token = socket.handshake.auth["token"] as string | undefined;
@@ -90,9 +92,12 @@ export function setupSocketAuth(io: KlipServer): void {
 
     try {
       // CLERK_SECRET_KEY is validated at startup in plugins/auth.ts — it exists here
-      const payload = await verifyToken(token, {
-        secretKey: process.env.CLERK_SECRET_KEY!,
-      });
+      const payload = await Promise.race([
+        verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY! }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("verifyToken timeout")), SOCKET_VERIFY_TIMEOUT_MS)
+        ),
+      ]);
       socket.data.userId = payload.sub;
       // Clerk token may include name via session claims; fallback to "Usuário"
       socket.data.name =
@@ -341,8 +346,12 @@ export function registerSocketHandlers(io: KlipServer): void {
       if (!typingState.has(topicId)) {
         typingState.set(topicId, new Map());
       }
-      typingState.get(topicId)!.set(userId, { userId, name, exp: Date.now() + TYPING_TTL_MS });
-      broadcastTyping(io, topicId);
+      const topicTyping = typingState.get(topicId)!;
+      // Only broadcast when the user transitions from not-typing → typing.
+      // Repeated typing:start events (sent every keystroke) are absorbed silently.
+      const wasTyping = topicTyping.has(userId);
+      topicTyping.set(userId, { userId, name, exp: Date.now() + TYPING_TTL_MS });
+      if (!wasTyping) broadcastTyping(io, topicId);
     });
 
     socket.on("typing:stop", (topicId) => {

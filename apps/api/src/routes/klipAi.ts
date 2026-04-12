@@ -100,7 +100,8 @@ export async function klipAiRoutes(fastify: FastifyInstance) {
         anthropicCircuitBreaker.onSuccess();
       } catch (err) {
         anthropicCircuitBreaker.onFailure();
-        fastify.log.error({ err }, "Anthropic API call failed (klip-command)");
+        const e = err instanceof Error ? err : new Error(String(err));
+        fastify.log.error({ message: e.message, name: e.name }, "Anthropic API call failed (klip-command)");
         return reply.status(503).send({ error: "Falha ao contatar serviço de IA. Tente novamente." });
       }
 
