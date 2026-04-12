@@ -23,3 +23,19 @@ export function getIo(): KlipServer {
   if (!_io) throw new Error("Socket.io not initialized");
   return _io;
 }
+
+/** Emit to a room without throwing if Socket.io is not initialized or the emit fails.
+ *  Use this in REST route handlers so a socket failure never breaks the HTTP response. */
+export function tryEmit(
+  room: string,
+  event: keyof ServerToClientEvents,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any
+): void {
+  try {
+    if (!_io) return;
+    _io.to(room).emit(event, data);
+  } catch {
+    // Non-fatal — the HTTP response already succeeded
+  }
+}

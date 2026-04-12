@@ -3,6 +3,8 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import { Server } from "socket.io";
+import { createAdapter } from "@socket.io/redis-adapter";
+import { Redis } from "ioredis";
 import type { IncomingMessage, ServerResponse, Server as NodeServer } from "node:http";
 import { communitiesRoutes } from "./routes/communities.js";
 import { topicsRoutes } from "./routes/topics.js";
@@ -99,6 +101,24 @@ const io = new Server(
   fastify.server as NodeServer<typeof IncomingMessage, typeof ServerResponse>,
   { cors: { origin: WEB_ORIGINS, credentials: true } }
 );
+
+// Redis adapter — enables horizontal scaling across multiple Railway instances.
+// Without this, Socket.io is in-memory only and events don't cross process boundaries.
+// Falls back to in-memory if REDIS_URL is not set (local dev without Redis).
+const redisUrl = process.env.REDIS_URL;
+if (redisUrl && redisUrl !== "redis://localhost:6379") {
+  try {
+    const pubClient = new Redis(redisUrl, { lazyConnect: true, maxRetriesPerRequest: 3 });
+    const subClient = pubClient.duplicate();
+    await Promise.all([pubClient.connect(), subClient.connect()]);
+    io.adapter(createAdapter(pubClient, subClient));
+    fastify.log.info("Socket.io Redis adapter connected");
+  } catch (err) {
+    fastify.log.warn({ err }, "Redis adapter failed — falling back to in-memory Socket.io");
+  }
+} else {
+  fastify.log.info("Socket.io using in-memory adapter (no Redis configured)");
+}
 
 registerSocketHandlers(io);
 
