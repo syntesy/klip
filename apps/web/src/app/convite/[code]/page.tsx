@@ -28,26 +28,18 @@ const API_URL =
 export default async function InvitePage({ params }: Props) {
   const { code } = await params;
 
-  console.log("=== CONVITE DEBUG ===");
-  console.log("code recebido:", code);
-  console.log("API_URL:", API_URL);
-
   let res: Response;
   try {
     res = await fetch(`${API_URL}/api/invites/${code}`, { cache: "no-store" });
-    console.log("status da resposta:", res.status);
-  } catch (err) {
-    console.error("ERRO no fetch:", err instanceof Error ? err.message : String(err));
+  } catch {
     return <ServiceUnavailable />;
   }
 
   if (!res.ok) {
-    console.log("resposta não-ok, status:", res.status);
     return <NotFound status={res.status} />;
   }
 
   const invite = await res.json() as InviteData;
-  console.log("convite encontrado:", invite.code, "comunidade:", invite.community.name);
 
   // If already authenticated, try to accept immediately
   const { userId, getToken } = await auth();
