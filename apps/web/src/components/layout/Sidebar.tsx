@@ -7,7 +7,6 @@ import { useUser, useClerk, useAuth } from "@clerk/nextjs";
 import { MoreHorizontal, Rss, Bookmark, CheckSquare, Sparkles, LogOut } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { KlipLogo } from "@/components/ui/KlipLogo";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
 // ─── User menu dropdown ───────────────────────────────────────────────────────
@@ -462,7 +461,20 @@ export function Sidebar({ communities, isOpen = true, onClose }: SidebarProps) {
           className="flex items-center justify-between px-4 pb-[14px] border-b border-[var(--color-sidebar-border)] shrink-0"
           style={{ gap: 8, paddingTop: "max(16px, env(safe-area-inset-top))" }}
         >
-          <KlipLogo variant="full" size="md" theme="light" />
+          <span
+            aria-label="Klip"
+            style={{
+              fontSize: 28,
+              fontWeight: 800,
+              color: "#ffffff",
+              letterSpacing: "-1px",
+              lineHeight: 1,
+              fontFamily: "-apple-system, 'SF Pro Display', system-ui, sans-serif",
+              userSelect: "none",
+            }}
+          >
+            k<span style={{ color: "#4A9EFF" }}>l</span>ip
+          </span>
           {onClose && (
             <button
               type="button"

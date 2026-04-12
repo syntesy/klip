@@ -2,6 +2,22 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { NewCommunityButton } from "@/components/communities/NewCommunityButton";
 
+// Paleta de cores para o topo dos cards (derivada do nome)
+const CARD_COLORS = [
+  "#1249A0", "#0D9B6A", "#7B3FA0", "#B06A00",
+  "#0E7490", "#9D174D", "#065F46", "#1E3A5F",
+];
+
+function cardColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) & 0xffffffff;
+  return CARD_COLORS[Math.abs(hash) % CARD_COLORS.length]!;
+}
+
+function initials(name: string): string {
+  return name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
+}
+
 interface Community {
   id: string;
   name: string;
@@ -10,7 +26,7 @@ interface Community {
   ownerId: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+const API_URL = process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 async function fetchCommunities(): Promise<Community[]> {
   try {
@@ -52,19 +68,40 @@ export default async function CommunitiesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {communities.map((community) => (
-            <Link
-              key={community.id}
-              href={`/communities/${community.id}`}
-              className="bg-bg-surface rounded-xl border border-border p-6 hover:border-blue/40 hover:shadow-sm transition-all block no-underline"
-            >
-              <h2 className="text-[15px] font-semibold text-text-1 mb-1">{community.name}</h2>
-              {community.description && (
-                <p className="text-[13px] text-text-3 line-clamp-2">{community.description}</p>
-              )}
-              <p className="text-[11px] text-text-3 mt-3 font-mono">/{community.slug}</p>
-            </Link>
-          ))}
+          {communities.map((community) => {
+            const color = cardColor(community.name);
+            const abbr = initials(community.name);
+            return (
+              <Link
+                key={community.id}
+                href={`/communities/${community.id}`}
+                className="block no-underline rounded-xl overflow-hidden transition-all hover:shadow-md"
+                style={{ background: "var(--color-bg-surface)", border: "0.5px solid var(--color-border)" }}
+              >
+                {/* Faixa colorida no topo */}
+                <div style={{ height: 6, background: color }} />
+                <div className="p-5">
+                  {/* Badge de iniciais + nome */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div
+                      className="flex items-center justify-center text-[13px] font-bold text-white shrink-0"
+                      style={{ width: 38, height: 38, borderRadius: 10, background: color }}
+                    >
+                      {abbr}
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="text-[14px] font-semibold text-text-1 truncate">{community.name}</h2>
+                      <p className="text-[11px] text-text-3 font-mono truncate">/{community.slug}</p>
+                    </div>
+                  </div>
+                  {/* Descrição */}
+                  {community.description && (
+                    <p className="text-[12.5px] text-text-3 line-clamp-2 leading-[1.5]">{community.description}</p>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

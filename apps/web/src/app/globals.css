@@ -3,26 +3,29 @@
 @tailwind utilities;
 
 @layer base {
-  * {
+  *, *::before, *::after {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
   }
 
-  html, body {
-    overscroll-behavior: none;
-  }
+  /* Oculta scrollbar em todos os navegadores */
+  ::-webkit-scrollbar { display: none; }
+  * { scrollbar-width: none; }
 
-  ::-webkit-scrollbar {
-    display: none;
+  html, body {
+    background: #08111f;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   body {
-    @apply bg-bg-page text-text-1;
+    @apply text-text-1;
     transition: background-color 0.2s, color 0.2s;
+    font-family: -apple-system, 'SF Pro Display', system-ui, sans-serif;
   }
 
   :root {
-    /* Backgrounds */
+    /* ── Light mode ────────────────────────────────────── */
     --color-bg-page:    #F0F4FA;
     --color-bg-surface: #FFFFFF;
     --color-bg-subtle:  #E2E8F3;
@@ -31,7 +34,6 @@
     --color-sidebar-hover:  #DDE3EF;
     --color-sidebar-border: #D0D8EC;
 
-    /* Azul — acento principal */
     --color-blue:        #1249A0;
     --color-blue-bright: #4A9EFF;
     --color-blue-dim:    rgba(18, 73, 160, 0.07);
@@ -39,133 +41,114 @@
     --color-blue-border: rgba(18, 73, 160, 0.15);
     --color-blue-glow:   rgba(18, 73, 160, 0.12);
 
-    /* Verde — IA e sucesso */
     --color-green:        #0D9B6A;
     --color-green-dim:    rgba(13, 155, 106, 0.09);
     --color-green-border: rgba(13, 155, 106, 0.22);
 
-    /* Âmbar — alertas */
     --color-amber:     #B06A00;
     --color-amber-dim: rgba(176, 106, 0, 0.08);
 
-    /* Texto */
     --color-text-1: #0F1923;
     --color-text-2: #4A5568;
     --color-text-3: #8A96A8;
 
-    /* Bordas */
     --color-border:     #DDE3EE;
     --color-border-mid: #C8D0E0;
 
-    /* Especiais */
     --color-navy:  #0B1628;
     --color-slate: #6B8BAF;
 
-    /* Semânticos — sobrescritos no dark */
-    --color-ai-card-bg:      #F0F6FF;
-    --color-danger-dim:      #fef2f2;
-    --color-danger-border:   #fca5a5;
+    --color-ai-card-bg:    #F0F6FF;
+    --color-danger-dim:    #fef2f2;
+    --color-danger-border: #fca5a5;
 
-    /* Input field */
     --color-input-bg:           var(--color-bg-subtle);
     --color-input-bg-focus:     var(--color-bg-surface);
     --color-input-border:       var(--color-border);
     --color-input-border-focus: var(--color-blue-border);
 
-    /* Toolbar — botão neutro (Decisão, Votação) */
     --color-btn-neutral-bg:     transparent;
     --color-btn-neutral-border: var(--color-border);
     --color-btn-neutral-color:  var(--color-text-2);
 
-    /* Pill de contexto */
     --color-pill-text:   var(--color-blue-bright);
     --color-pill-border: var(--color-blue-border);
   }
 
+  /* ── Dark mode — Navy design system ──────────────────── */
   [data-theme="dark"] {
-    /* Backgrounds */
-    --color-bg-page:    #1A1A1A;
-    --color-bg-surface: #242424;
-    --color-bg-subtle:  #2E2E2E;
-    --color-bg-muted:   #383838;
+    /* Fundos */
+    --color-bg-page:    #08111f;
+    --color-bg-surface: #0d1e35;
+    --color-bg-subtle:  #0f1e35;
+    --color-bg-muted:   #091e2e;
 
     /* Sidebar */
-    --color-sidebar:        #141414;
-    --color-sidebar-hover:  #2A2A2A;
-    --color-sidebar-border: rgba(255,255,255,.08);
+    --color-sidebar:        #08111f;
+    --color-sidebar-hover:  rgba(255, 255, 255, 0.05);
+    --color-sidebar-border: #1a2e4a;
 
     /* Bordas */
-    --color-border:     rgba(255,255,255,.10);
-    --color-border-mid: rgba(255,255,255,.18);
+    --color-border:     #1a2e4a;
+    --color-border-mid: #1a3a5a;
 
     /* Texto */
-    --color-text-1: #F5F5F5;
-    --color-text-2: #A0A0A0;
-    --color-text-3: #606060;
+    --color-text-1: #ffffff;
+    --color-text-2: #f0f6ff;
+    --color-text-3: #e0eaf6;
 
     /* Especiais */
-    --color-navy:  #0D0D0D;
-    --color-slate: #888888;
+    --color-navy:  #04080f;
+    --color-slate: #5a7a9a;
 
-    /* Azul — bright no dark para contraste */
+    /* Azul */
     --color-blue:        #4A9EFF;
     --color-blue-bright: #4A9EFF;
-    --color-blue-dim:    rgba(74,158,255,.12);
-    --color-blue-dim2:   rgba(74,158,255,.07);
-    --color-blue-border: rgba(74,158,255,.50);
-    --color-blue-glow:   rgba(74,158,255,.12);
+    --color-blue-dim:    rgba(74, 158, 255, 0.10);
+    --color-blue-dim2:   rgba(74, 158, 255, 0.06);
+    --color-blue-border: rgba(74, 158, 255, 0.35);
+    --color-blue-glow:   rgba(74, 158, 255, 0.12);
 
     /* Verde */
     --color-green:        #22C98A;
-    --color-green-dim:    rgba(34,201,138,.12);
-    --color-green-border: rgba(34,201,138,.50);
+    --color-green-dim:    rgba(34, 201, 138, 0.12);
+    --color-green-border: rgba(34, 201, 138, 0.35);
 
     /* Âmbar */
-    --color-amber:     #F59E0B;
-    --color-amber-dim: rgba(245,158,11,.15);
+    --color-amber:     #F5A623;
+    --color-amber-dim: rgba(245, 166, 35, 0.15);
 
     /* Semânticos */
-    --color-ai-card-bg:    #242424;
-    --color-danger-dim:    #2A1010;
-    --color-danger-border: rgba(255,100,100,.40);
+    --color-ai-card-bg:    #091e2e;
+    --color-danger-dim:    rgba(239, 68, 68, 0.08);
+    --color-danger-border: rgba(239, 68, 68, 0.30);
 
-    /* Input field */
-    --color-input-bg:           #2E2E2E;
-    --color-input-bg-focus:     #383838;
-    --color-input-border:       rgba(255,255,255,.20);
+    /* Input */
+    --color-input-bg:           #0d1e35;
+    --color-input-bg-focus:     #0f2440;
+    --color-input-border:       #1a2e4a;
     --color-input-border-focus: #4A9EFF;
 
-    /* Toolbar — botão neutro dark */
+    /* Botão neutro */
     --color-btn-neutral-bg:     transparent;
-    --color-btn-neutral-border: rgba(255,255,255,.20);
-    --color-btn-neutral-color:  #A0A0A0;
+    --color-btn-neutral-border: #1a2e4a;
+    --color-btn-neutral-color:  #e0eaf6;
 
-    /* Pill de contexto dark */
-    --color-pill-text:   #A0A0A0;
-    --color-pill-border: rgba(255,255,255,.20);
+    /* Pill de contexto */
+    --color-pill-text:   #8AAAC8;
+    --color-pill-border: #1a2e4a;
   }
 }
 
-
-/* ── Sidebar dark mode contrast ──────────────────────────────────────────────
-   Scoped to the sidebar nav so other components are unaffected.
-   text-text-2 and text-text-3 resolve to higher-contrast values here only. */
+/* ── Sidebar dark mode scoped contrast ──────────────────────────────────────── */
 [data-theme="dark"] nav[aria-label="Navegação principal"] {
-  --color-text-2: #C8D8E8;   /* menu items + community names: was #A0A0A0 */
-  --color-text-3: #4A6A8A;   /* section labels MENU/COMUNIDADES: was #606060 */
+  --color-text-2: #c8d8e8;
+  --color-text-3: #5a7a9a;
 }
 
 @layer utilities {
-  /* iOS safe-area padding for components near the bottom edge */
   .pb-safe {
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-  }
-
-  /* Ensure interactive elements have adequate touch targets on mobile */
-  @media (max-width: 767px) {
-    button:not([data-no-touch-expand]), [role="button"]:not([data-no-touch-expand]) {
-      position: relative;
-    }
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
   }
 
   .scrollbar-thin {
@@ -173,14 +156,8 @@
     scrollbar-color: var(--color-border-mid) transparent;
   }
 
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: var(--color-border-mid);
     border-radius: 2px;

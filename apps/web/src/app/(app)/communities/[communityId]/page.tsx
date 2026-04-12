@@ -26,7 +26,7 @@ interface Topic {
   lastActivityAt: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+const API_URL = process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 async function apiFetch(path: string, token: string) {
   try {
@@ -57,10 +57,10 @@ const STATUS_LABEL = {
   closed: "encerrado",
 } as const;
 
-const STATUS_DOT = {
-  active: "bg-green-500",
-  resolved: "bg-blue-500",
-  closed: "bg-gray-400",
+const STATUS_COLOR = {
+  active: "#22C98A",
+  resolved: "#4A9EFF",
+  closed: "#5a7a9a",
 } as const;
 
 export default async function CommunityPage({ params }: Props) {
@@ -134,7 +134,7 @@ function TopicGrid({ topics, communityId }: { topics: Topic[]; communityId: stri
           href={`/communities/${communityId}/topics/${topic.id}`}
           className="flex items-start gap-3 bg-bg-surface rounded-xl border border-border p-4 hover:border-blue/40 hover:shadow-sm transition-all no-underline"
         >
-          <span className={`mt-[6px] w-[7px] h-[7px] rounded-full shrink-0 ${STATUS_DOT[topic.status]}`} />
+          <span style={{ marginTop: 6, width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: STATUS_COLOR[topic.status], display: "inline-block" }} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               {topic.isPinned && <span className="text-[10px] text-text-3">📌</span>}

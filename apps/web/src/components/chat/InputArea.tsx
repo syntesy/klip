@@ -50,116 +50,6 @@ function SendIcon() {
   );
 }
 
-function ImageIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-      <rect x="1" y="1.5" width="9" height="8" rx="1" stroke="currentColor" strokeWidth="1" />
-      <circle cx="3.5" cy="4" r="1" fill="currentColor" />
-      <path d="M1 8L3.5 5.5L5.5 7.5L7 6L10 8.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function MicIcon({ active }: { active?: boolean }) {
-  return (
-    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-      <rect x="3.5" y="1" width="4" height="6" rx="2" stroke={active ? "currentColor" : "currentColor"} strokeWidth="1" fill={active ? "currentColor" : "none"} />
-      <path d="M1.5 5.5C1.5 7.71 3.29 9.5 5.5 9.5C7.71 9.5 9.5 7.71 9.5 5.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-      <line x1="5.5" y1="9.5" x2="5.5" y2="10.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function StopIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor" aria-hidden="true">
-      <rect x="2" y="2" width="7" height="7" rx="1" />
-    </svg>
-  );
-}
-
-function DecisionIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-      <path d="M2 2C2 1.72 2.22 1.5 2.5 1.5H7L9.5 4V9.5C9.5 9.78 9.28 10 9 10H2.5C2.22 10 2 9.78 2 9.5V2Z" stroke="currentColor" strokeWidth="1" />
-      <path d="M7 1.5V4H9.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-      <path d="M3.5 5.5H7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-      <path d="M3.5 7.5H7.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function SparkleIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-      <path d="M5.5 1L6.4 4.2L9.5 5.5L6.4 6.8L5.5 10L4.6 6.8L1.5 5.5L4.6 4.2L5.5 1Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-// ─── Toolbar button ───────────────────────────────────────────────────────────
-
-interface ToolbarButtonProps {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  variant?: "default" | "klip" | "danger";
-  disabled?: boolean;
-  active?: boolean;
-}
-
-function ToolbarButton({ icon, label, onClick, variant = "default", disabled = false, active = false }: ToolbarButtonProps) {
-  const isKlip = variant === "klip";
-  const isDanger = variant === "danger";
-
-  let inlineStyle: React.CSSProperties;
-  if (isKlip) {
-    inlineStyle = {
-      background: "transparent",
-      border: "none",
-      color: "#22C98A",
-      fontWeight: 600,
-    };
-  } else if (isDanger) {
-    inlineStyle = {
-      background: "transparent",
-      border: "none",
-      color: "#ef4444",
-    };
-  } else if (active) {
-    inlineStyle = {
-      background: "rgba(74,158,255,.12)",
-      border: "none",
-      color: "#4A9EFF",
-    };
-  } else {
-    inlineStyle = {
-      background: "transparent",
-      border: "none",
-      color: "#6B8BAF",
-    };
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        "inline-flex items-center gap-[5px] text-[11px] font-medium",
-        "px-[8px] py-[4px] rounded-[6px] transition-colors leading-none",
-        "disabled:opacity-40 disabled:cursor-not-allowed",
-        isKlip && "hover:bg-[rgba(34,201,138,.08)]",
-        isDanger && "hover:bg-[rgba(239,68,68,.08)]",
-        !isKlip && !isDanger && "hover:bg-[rgba(255,255,255,.06)]",
-      )}
-      style={inlineStyle}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
 
 // ─── Pending attachment previews ──────────────────────────────────────────────
 
@@ -744,88 +634,153 @@ export function InputArea({
         </button>
       </div>
 
-      {/* ── Toolbar ──────────────────────────────────────────────────── */}
-      <div role="toolbar" aria-label="Ferramentas da mensagem" className="flex items-center gap-[4px]">
-
-        {/* Group 1: Media (Imagem + Áudio) */}
-        <button
-          type="button"
-          onClick={handleImageButtonClick}
-          disabled={disabled || recording}
-          className="inline-flex items-center gap-[4px] text-[11px] font-medium px-[8px] py-[4px] rounded-[6px] transition-colors leading-none disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[rgba(255,255,255,.06)]"
-          style={{
-            color: "#6B8BAF",
-            border: "none",
-            background: "transparent",
-          }}
-        >
-          <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-            <rect x="1" y="1" width="12" height="12" rx="2" />
-            <circle cx="4.5" cy="4.5" r="1.2" fill="currentColor" stroke="none" />
-            <path d="M13 9l-4-4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Imagem
-        </button>
-        <input
-          ref={imageInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          multiple
-          capture={undefined}
-          style={{ display: "none" }}
-          onChange={handleImageSelect}
-          aria-hidden="true"
-        />
-
-        <button
-          type="button"
-          onClick={handleMicButton}
-          disabled={disabled}
-          className="inline-flex items-center gap-[4px] text-[11px] font-medium px-[8px] py-[4px] rounded-[6px] transition-colors leading-none disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[rgba(255,255,255,.06)]"
-          style={recording ? {
-            color: "#ef4444",
-            border: "none",
-            background: "rgba(239,68,68,.08)",
-          } : {
-            color: "#6B8BAF",
-            border: "none",
-            background: "transparent",
-          }}
-        >
-          {recording ? <StopIcon /> : (
-            <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-              <rect x="4" y="1" width="6" height="8" rx="3" />
-              <path d="M2 8c0 2.8 2.2 5 5 5s5-2.2 5-5" strokeLinecap="round" />
-              <path d="M7 13v1.5" strokeLinecap="round" />
+      {/* ── Barra de ações — SEMPRE VISÍVEL ─────────────────────────────── */}
+      <div
+        role="toolbar"
+        aria-label="Ferramentas da mensagem"
+        style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", paddingTop: 8 }}
+      >
+        {/* Imagem */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+          <button
+            type="button"
+            onClick={handleImageButtonClick}
+            disabled={disabled || recording}
+            aria-label="Anexar imagem"
+            style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: "#0f1e35",
+              border: "1px solid rgba(255,255,255,0.18)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#ffffff", cursor: "pointer", flexShrink: 0,
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
+              <rect x="1.5" y="1.5" width="13" height="13" rx="2" />
+              <circle cx="5.5" cy="5.5" r="1.5" fill="currentColor" stroke="none" />
+              <path d="M14.5 10.5L10.5 6.5L6.5 10.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-          )}
-          {recording ? `Parar ${formatTimer(recordingSeconds)}` : "Áudio"}
-        </button>
+          </button>
+          <span style={{ fontSize: 9, color: "#8AAAC8", fontWeight: 500, lineHeight: 1 }}>Imagem</span>
+        </div>
 
-        {/* Separator */}
-        <span className="w-px h-[18px] bg-border mx-[4px] shrink-0" />
-
-        {/* Group 2: Decision + Poll */}
-        <ToolbarButton icon={<DecisionIcon />} label="Decisão" onClick={onMarkDecision} disabled={disabled} />
-        {isAdmin && (
-          <ToolbarButton
-            icon={
-              <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-                <path d="M2 12l4-4 3 3 3-5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            }
-            label="Enquete"
-            onClick={() => {/* TODO fase 4 */}}
+        {/* Áudio */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+          <button
+            type="button"
+            onClick={handleMicButton}
             disabled={disabled}
-          />
+            aria-label={recording ? "Parar gravação" : "Gravar áudio"}
+            style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: recording ? "rgba(239,68,68,.12)" : "#0f1e35",
+              border: recording ? "1px solid rgba(239,68,68,.5)" : "1px solid rgba(255,255,255,0.18)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: recording ? "#ef4444" : "#ffffff", cursor: "pointer", flexShrink: 0,
+            }}
+          >
+            {recording ? (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <rect x="3" y="3" width="10" height="10" rx="2" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
+                <rect x="5" y="1.5" width="6" height="8" rx="3" />
+                <path d="M3 9c0 2.8 2.2 5 5 5s5-2.2 5-5" strokeLinecap="round" />
+                <path d="M8 14v1.5" strokeLinecap="round" />
+              </svg>
+            )}
+          </button>
+          <span style={{ fontSize: 9, color: recording ? "#ef4444" : "#8AAAC8", fontWeight: 500, lineHeight: 1 }}>
+            {recording ? formatTimer(recordingSeconds) : "Áudio"}
+          </span>
+        </div>
+
+        {/* Decisão */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+          <button
+            type="button"
+            onClick={onMarkDecision}
+            disabled={disabled}
+            aria-label="Marcar como decisão"
+            style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: "#0f1e35",
+              border: "1px solid rgba(255,255,255,0.18)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#ffffff", cursor: "pointer", flexShrink: 0,
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
+              <path d="M3 3C3 2.45 3.45 2 4 2H10L13 5V14C13 14.55 12.55 15 12 15H4C3.45 15 3 14.55 3 14V3Z" />
+              <path d="M10 2V5H13" strokeLinecap="round" />
+              <path d="M5.5 8.5H10.5" strokeLinecap="round" />
+              <path d="M5.5 11H10.5" strokeLinecap="round" />
+            </svg>
+          </button>
+          <span style={{ fontSize: 9, color: "#8AAAC8", fontWeight: 500, lineHeight: 1 }}>Decisão</span>
+        </div>
+
+        {/* Enquete — só admin */}
+        {isAdmin && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <button
+              type="button"
+              onClick={() => {/* TODO fase 4 */}}
+              disabled={disabled}
+              aria-label="Criar enquete"
+              style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: "#0f1e35",
+                border: "1px solid rgba(255,255,255,0.18)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#ffffff", cursor: "pointer", flexShrink: 0,
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
+                <rect x="2" y="11" width="3" height="3" rx="0.5" />
+                <rect x="6.5" y="7" width="3" height="7" rx="0.5" />
+                <rect x="11" y="3" width="3" height="11" rx="0.5" />
+              </svg>
+            </button>
+            <span style={{ fontSize: 9, color: "#8AAAC8", fontWeight: 500, lineHeight: 1 }}>Enquete</span>
+          </div>
         )}
 
-        {/* Separator */}
-        <span className="w-px h-[18px] bg-border mx-[4px] shrink-0" />
-
-        {/* Group 3: AI */}
-        <ToolbarButton icon={<SparkleIcon />} label="@klip resumir" onClick={onRequestSummary} variant="klip" disabled={disabled} />
+        {/* @klip · IA */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+          <button
+            type="button"
+            onClick={onRequestSummary}
+            disabled={disabled}
+            aria-label="@klip — Resumir com IA"
+            style={{
+              height: 36, borderRadius: 10,
+              background: "#091e2e",
+              border: "1px solid #4A9EFF",
+              display: "flex", alignItems: "center",
+              padding: "0 10px", gap: 2,
+              cursor: "pointer", flexShrink: 0,
+            }}
+          >
+            <span style={{ fontSize: 10, fontWeight: 800, color: "#4A9EFF", lineHeight: 1 }}>@klip</span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: "#ffffff", lineHeight: 1 }}>&nbsp;· IA</span>
+          </button>
+          <span style={{ fontSize: 9, color: "#4A9EFF", fontWeight: 700, lineHeight: 1 }}>resumir</span>
+        </div>
       </div>
+
+      {/* Input oculto para seleção de imagem */}
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        multiple
+        capture={undefined}
+        style={{ display: "none" }}
+        onChange={handleImageSelect}
+        aria-hidden="true"
+      />
     </div>
   );
 }

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
+import Image from "next/image";
 import Link from "next/link";
 import { Sidebar } from "./Sidebar";
 import type { CommunityWithMeta } from "./Sidebar";
-import { KlipLogo } from "@/components/ui/KlipLogo";
 import { usePremiumToast } from "@/hooks/usePremiumToast";
 
 interface MobileLayoutProps {
@@ -13,19 +13,134 @@ interface MobileLayoutProps {
   children: React.ReactNode;
 }
 
+// ─── Wordmark ─────────────────────────────────────────────────────────────────
+
+function KlipWordmark() {
+  return (
+    <span
+      aria-label="Klip"
+      style={{
+        fontSize: 33,
+        fontWeight: 800,
+        color: "#ffffff",
+        letterSpacing: "-1.2px",
+        lineHeight: 1,
+        fontFamily: "-apple-system, 'SF Pro Display', system-ui, sans-serif",
+        userSelect: "none",
+      }}
+    >
+      k<span style={{ color: "#4A9EFF" }}>l</span>ip
+    </span>
+  );
+}
+
+// ─── Hamburger ────────────────────────────────────────────────────────────────
+
 function HamburgerIcon() {
   return (
-    <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-      <line x1="0" y1="1" x2="18" y2="1" />
-      <line x1="0" y1="7" x2="18" y2="7" />
-      <line x1="0" y1="13" x2="18" y2="13" />
+    <svg width="16" height="12" viewBox="0 0 16 12" fill="none" aria-hidden="true">
+      <line x1="0" y1="1" x2="16" y2="1" stroke="#5a7a9a" strokeWidth="1.6" strokeLinecap="round" />
+      <line x1="0" y1="6" x2="16" y2="6" stroke="#5a7a9a" strokeWidth="1.6" strokeLinecap="round" />
+      <line x1="0" y1="11" x2="16" y2="11" stroke="#5a7a9a" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
 
+// ─── User avatar (top-right) ──────────────────────────────────────────────────
+
+function getInitials(name: string): string {
+  return name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
+}
+
+function TopNavAvatar() {
+  const { user, isLoaded } = useUser();
+  if (!isLoaded) return <div style={{ width: 32, height: 32 }} />;
+
+  const name = user?.fullName ?? user?.firstName ?? "U";
+  const initials = getInitials(name);
+  const imageUrl = user?.imageUrl;
+
+  return (
+    <div
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: "50%",
+        background: "#1249A0",
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}
+    >
+      {imageUrl ? (
+        <Image src={imageUrl} alt={name} width={32} height={32} style={{ objectFit: "cover", width: "100%", height: "100%" }} />
+      ) : (
+        <span style={{ fontSize: 11, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{initials}</span>
+      )}
+    </div>
+  );
+}
+
+// ─── Top navigation bar ───────────────────────────────────────────────────────
+
+interface TopNavProps {
+  onMenuOpen: () => void;
+}
+
+function TopNav({ onMenuOpen }: TopNavProps) {
+  const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+  return (
+    <div
+      className="md:hidden shrink-0 flex items-center justify-between"
+      style={{
+        background: "#08111f",
+        paddingTop: "max(8px, env(safe-area-inset-top, 8px))",
+        paddingBottom: 10,
+        paddingLeft: 18,
+        paddingRight: 18,
+        borderBottom: "0.5px solid #1a2e4a",
+      }}
+    >
+      {/* Hamburguer */}
+      <button
+        type="button"
+        onClick={onMenuOpen}
+        aria-label="Abrir menu de navegação"
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 10,
+          background: "#0f1e35",
+          border: "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          cursor: "pointer",
+        }}
+      >
+        <HamburgerIcon />
+      </button>
+
+      {/* Wordmark centralizado */}
+      <KlipWordmark />
+
+      {/* Avatar do usuário */}
+      {hasClerk ? <TopNavAvatar /> : <div style={{ width: 32, height: 32 }} />}
+    </div>
+  );
+}
+
+// ─── Premium toasts ───────────────────────────────────────────────────────────
+
 function formatPrice(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
+
+// ─── Layout interno ───────────────────────────────────────────────────────────
 
 function MobileLayoutInner({ communities, children }: MobileLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -36,30 +151,19 @@ function MobileLayoutInner({ communities, children }: MobileLayoutProps) {
   const { toasts, dismiss } = usePremiumToast(getToken);
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-bg-page">
+    <div
+      style={{ display: "flex", height: "100dvh", overflow: "hidden", background: "#08111f" }}
+    >
+      {/* Sidebar — desktop sempre visível, mobile drawer */}
       <Sidebar communities={communities} isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
-        {/* Mobile-only top bar */}
-        <div
-          className="flex items-center px-4 border-b border-border bg-bg-surface shrink-0 md:hidden"
-          style={{ paddingTop: "env(safe-area-inset-top, 0px)", minHeight: 52 }}
-        >
-          <button
-            type="button"
-            onClick={openSidebar}
-            aria-label="Abrir menu de navegação"
-            className="flex items-center justify-center w-9 h-9 rounded-[8px] text-text-2 hover:bg-bg-subtle transition-colors shrink-0"
-          >
-            <HamburgerIcon />
-          </button>
-          {/* Centred logo */}
-          <div className="flex-1 flex justify-center">
-            <KlipLogo variant="full" size="sm" theme="light" />
-          </div>
-          {/* Mirror spacer keeps logo centred */}
-          <div className="w-9 shrink-0" />
-        </div>
-        <main className="flex-1 overflow-hidden">
+
+      {/* Conteúdo principal */}
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", minWidth: 0 }}>
+        {/* Top nav — só mobile */}
+        <TopNav onMenuOpen={openSidebar} />
+
+        {/* Conteúdo da página */}
+        <main style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           {children}
         </main>
       </div>
@@ -72,29 +176,29 @@ function MobileLayoutInner({ communities, children }: MobileLayoutProps) {
               key={toast.id}
               className="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl text-[13px] font-medium"
               style={{
-                background: "var(--color-bg-surface)",
-                border: "1px solid var(--color-border)",
+                background: "#0d1e35",
+                border: "0.5px solid #1a2e4a",
                 maxWidth: 360,
-                boxShadow: "0 4px 20px rgba(0,0,0,.18)",
+                boxShadow: "0 4px 20px rgba(0,0,0,.4)",
               }}
             >
               <span style={{ fontSize: 18, lineHeight: 1 }}>⭐</span>
               <div className="flex-1 min-w-0">
-                <span className="text-text-1">Novo conteúdo premium: </span>
-                <span className="font-semibold text-text-1 truncate">{toast.title}</span>
-                <span className="text-text-3 ml-1">· {formatPrice(toast.price)}</span>
+                <span style={{ color: "#f0f6ff" }}>Novo conteúdo premium: </span>
+                <span style={{ fontWeight: 600, color: "#fff" }} className="truncate">{toast.title}</span>
+                <span style={{ color: "#8AAAC8", marginLeft: 4 }}>· {formatPrice(toast.price)}</span>
               </div>
               <Link
                 href={`/communities/${toast.communityId}/premium`}
                 onClick={() => dismiss(toast.id)}
-                className="text-[12px] font-semibold text-blue hover:underline whitespace-nowrap shrink-0"
+                style={{ fontSize: 12, fontWeight: 600, color: "#4A9EFF", whiteSpace: "nowrap", flexShrink: 0 }}
               >
                 Ver
               </Link>
               <button
                 type="button"
                 onClick={() => dismiss(toast.id)}
-                className="text-text-3 hover:text-text-1 transition-colors shrink-0"
+                style={{ color: "#5a7a9a", flexShrink: 0 }}
                 aria-label="Fechar"
               >
                 <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -110,8 +214,5 @@ function MobileLayoutInner({ communities, children }: MobileLayoutProps) {
 }
 
 export function MobileLayout({ communities, children }: MobileLayoutProps) {
-  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-    return <MobileLayoutInner communities={communities}>{children}</MobileLayoutInner>;
-  }
   return <MobileLayoutInner communities={communities}>{children}</MobileLayoutInner>;
 }

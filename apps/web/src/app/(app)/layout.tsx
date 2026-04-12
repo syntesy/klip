@@ -4,7 +4,7 @@ import type { CommunityWithMeta } from "@/components/layout/Sidebar";
 
 export const dynamic = "force-dynamic";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+const API_URL = process.env.INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 async function fetchCommunities(): Promise<CommunityWithMeta[]> {
   try {
