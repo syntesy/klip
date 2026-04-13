@@ -113,17 +113,23 @@ function formatTimestamp(date: Date): string {
   return format(date, "HH:mm");
 }
 
-function getAvatarStyle(userId: string, isDark = false): { background: string; color: string } {
-  const hue = parseInt(userId.replace(/-/g, "").slice(0, 8), 16) % 360;
-  if (isDark) {
-    return {
-      background: `hsl(${hue}, 45%, 18%)`,
-      color: `hsl(${hue}, 80%, 72%)`,
-    };
-  }
+// Paleta de gradientes para avatares — 8 variações diagonais
+const AVATAR_GRADIENTS = [
+  "linear-gradient(135deg, #4A9EFF, #1249A0)",
+  "linear-gradient(135deg, #22C98A, #117a53)",
+  "linear-gradient(135deg, #F5A94A, #c47b1a)",
+  "linear-gradient(135deg, #60a5fa, #2563eb)",
+  "linear-gradient(135deg, #a78bfa, #6d28d9)",
+  "linear-gradient(135deg, #f472b6, #be185d)",
+  "linear-gradient(135deg, #34d399, #065f46)",
+  "linear-gradient(135deg, #fb923c, #9a3412)",
+];
+
+function getAvatarStyle(userId: string, _isDark = false): { background: string; color: string } {
+  const idx = parseInt(userId.replace(/-/g, "").slice(0, 8), 16) % AVATAR_GRADIENTS.length;
   return {
-    background: `hsl(${hue}, 55%, 88%)`,
-    color: `hsl(${hue}, 55%, 28%)`,
+    background: AVATAR_GRADIENTS[idx]!,
+    color: "#fff",
   };
 }
 
@@ -269,53 +275,30 @@ function AiIcon() {
 
 function TopicSummaryCard({ summary }: { summary: TopicSummary }) {
   return (
-    <div
-      className="rounded-[14px] p-[14px_16px] mb-5 shrink-0"
-      style={{
-        background: "var(--color-ai-card-bg)",
-        border: "1px solid var(--color-blue-border)",
-        borderLeft: "4px solid var(--color-blue)",
-        boxShadow: "0 1px 4px rgba(18,73,160,.08)",
-      }}
-    >
+    <div className="klip-resumo blue shrink-0">
       {/* Header */}
-      <div className="flex items-center gap-[8px] mb-[10px]">
-        <AiIcon />
-        <span
-          className="flex-1 text-blue font-semibold"
-          style={{ fontSize: 11, letterSpacing: "0.03em" }}
-        >
-          Klip resumiu este tópico
+      <div className="klip-resumo-header">
+        <span className="klip-resumo-dot" style={{ background: "var(--klip-blue)" }} />
+        <span className="klip-resumo-label" style={{ color: "var(--klip-blue)", flex: 1 }}>
+          Klip resumiu
         </span>
-        <span className="text-[11px] text-text-3" style={{ fontFamily: "var(--font-mono, monospace)" }}>
+        <span style={{ fontSize: 10, color: "var(--klip-text-4)", fontFamily: "var(--klip-font-mono)" }}>
           {formatTimeAgo(summary.generatedAt)}
         </span>
       </div>
 
       {/* Synthesis */}
-      <p className="text-[13.5px] text-text-2 leading-[1.7] mb-[10px]">
+      <p className="klip-resumo-text">
         {summary.content}
       </p>
 
-      {/* Decisions */}
+      {/* Decisions as bullet items */}
       {summary.decisions.length > 0 && (
-        <div className="flex flex-col gap-[6px]">
+        <ul className="klip-resumo-items" style={{ listStyle: "none", padding: 0, margin: 0 }}>
           {summary.decisions.map((decision, i) => (
-            <div
-              key={i}
-              className="flex items-start gap-[8px] rounded-[6px] px-[11px] py-[8px]"
-              style={{
-                background: "var(--color-blue-dim2)",
-                border: "1px solid var(--color-blue-border)",
-              }}
-            >
-              <span className="mt-[5px] w-[6px] h-[6px] rounded-full shrink-0" style={{ background: "var(--color-blue-bright)" }} />
-              <span className="text-[12.5px] text-text-2 leading-[1.5]">
-                {decision}
-              </span>
-            </div>
+            <li key={i} className="klip-resumo-item">{decision}</li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );
@@ -332,7 +315,7 @@ function MessageAvatar({
   const isDark = mounted && theme === "dark";
 
   if (!isFirst) {
-    return <div className="w-[34px] shrink-0" />;
+    return <div style={{ width: 26, flexShrink: 0 }} />;
   }
 
   const style = getAvatarStyle(author.id, isDark);
@@ -340,7 +323,7 @@ function MessageAvatar({
 
   return (
     <div
-      className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center text-[11px] font-bold shrink-0 leading-none mt-[1px]"
+      className="klip-avatar shrink-0 mt-[1px]"
       style={style}
       aria-hidden="true"
       title={author.name}
@@ -350,7 +333,8 @@ function MessageAvatar({
         <img
           src={author.imageUrl}
           alt={author.name}
-          className="w-full h-full object-cover rounded-[9px]"
+          className="w-full h-full object-cover"
+          style={{ borderRadius: "50%" }}
         />
       ) : (
         initials
@@ -608,15 +592,9 @@ function MessageHoverBar({
 
 function KlippedBadge() {
   return (
-    <div
-      className="inline-flex items-center gap-[5px] mt-[5px] px-[9px] py-[2px] rounded-[6px] text-[11px] font-medium text-green"
-      style={{
-        background: "var(--color-green-dim)",
-        border: "1px solid var(--color-green-border)",
-      }}
-    >
-      <span className="w-[5px] h-[5px] rounded-full bg-green shrink-0" />
-      klipado pela IA — decisão relevante
+    <div className="klip-badge green" style={{ display: "inline-flex" }}>
+      <span>✦</span>
+      klipado
     </div>
   );
 }
@@ -662,38 +640,32 @@ function MessageRow({
     return (
       <div
         id={`msg-${msg.id}`}
-        className="flex gap-[11px] px-[8px] py-[6px] rounded-[10px] mb-1"
+        className="flex gap-[11px]"
         style={{
-          background: "rgba(74,158,255,.04)",
-          border: "1px solid rgba(74,158,255,.12)",
+          background: "rgba(74,158,255,.035)",
+          border: "1px solid rgba(74,158,255,.15)",
           borderLeft: "3px solid #4A9EFF",
+          borderRadius: 14,
+          margin: "3px 12px",
+          padding: "10px 12px",
+          transition: "background 0.2s, border-color 0.2s",
         }}
       >
         {/* AI avatar */}
         <div
-          className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0 mt-[1px]"
-          style={{ background: "rgba(74,158,255,.15)", border: "1px solid rgba(74,158,255,.25)" }}
+          className="klip-avatar shrink-0 mt-[1px]"
+          style={{ background: "linear-gradient(135deg, #4A9EFF, #1249A0)" }}
         >
-          <span style={{ fontSize: 14, color: "#4A9EFF" }}>✦</span>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.03em" }}>kl</span>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-[8px] mb-[3px]">
-            <span className="text-[13.5px] font-bold text-blue leading-none" style={{ letterSpacing: "-0.1px" }}>
-              @klip
-            </span>
-            <span className="text-[11px] text-text-3 font-mono leading-none">
-              {formatTimestamp(msg.createdAt)}
-            </span>
-            <span
-              className="text-[10px] px-[5px] py-[1px] rounded-[4px] leading-none"
-              style={{ background: "rgba(74,158,255,.1)", color: "#4A9EFF" }}
-            >
-              IA
-            </span>
-          </div>
-          <p className="text-[13.5px] text-text-2 leading-[1.6] break-words whitespace-pre-wrap">
+          <p className="klip-ai-label">@klip</p>
+          <p className="klip-msg-text break-words whitespace-pre-wrap">
             {parseInline(msg.content)}
           </p>
+          <span style={{ fontSize: 9, color: "var(--klip-text-4)", fontFamily: "var(--klip-font-mono)" }}>
+            {formatTimestamp(msg.createdAt)}
+          </span>
         </div>
       </div>
     );
@@ -703,12 +675,19 @@ function MessageRow({
     <div
       id={`msg-${msg.id}`}
       className={cn(
-        "group relative flex gap-[11px] px-[8px] py-[4px] rounded-[10px]",
-        "hover:bg-bg-subtle transition-colors duration-[120ms]",
+        "group relative flex gap-[11px]",
+        "hover:bg-[rgba(74,158,255,0.04)] hover:border-[rgba(74,158,255,0.15)]",
         isOwn && "flex-row",
         isHighlighted && "ring-2 ring-inset ring-blue"
       )}
-      style={isHighlighted ? { background: "rgba(74,158,255,.08)", transition: "background 0.3s, box-shadow 0.3s" } : undefined}
+      style={{
+        background: isHighlighted ? "rgba(74,158,255,.08)" : "rgba(255,255,255,0.025)",
+        border: "1px solid rgba(255,255,255,0.055)",
+        borderRadius: 14,
+        margin: "3px 12px",
+        padding: "10px 12px",
+        transition: "background 0.2s, border-color 0.2s",
+      }}
     >
       <MessageAvatar author={msg.author} isFirst={isFirst} />
 
@@ -721,14 +700,14 @@ function MessageRow({
 
         {isFirst && (
           <div className="flex items-baseline gap-[8px] mb-[3px]">
-            <span className="text-[13.5px] font-bold text-text-1 leading-none" style={{ letterSpacing: "-0.1px" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--klip-text-1)", lineHeight: 1 }}>
               {msg.author.name}
             </span>
-            <span className="text-[11px] text-text-3 font-mono leading-none" style={{ letterSpacing: "0.02em" }}>
+            <span className="klip-msg-author" style={{ fontFamily: "var(--klip-font-mono)", lineHeight: 1 }}>
               {formatTimestamp(msg.createdAt)}
             </span>
             {msg.isEdited && (
-              <span className="text-[10px] text-text-3 italic leading-none">
+              <span style={{ fontSize: 10, color: "var(--klip-text-4)", fontStyle: "italic", lineHeight: 1 }}>
                 (editado)
               </span>
             )}
@@ -736,7 +715,7 @@ function MessageRow({
         )}
 
         {msg.content && (
-          <p className="text-[13.5px] text-text-2 leading-[1.6] break-words">
+          <p className="klip-msg-text break-words">
             {parseInline(msg.content)}
           </p>
         )}
@@ -797,7 +776,7 @@ function MessageGroupBlock({
   highlightedMessageId?: string | null;
 }) {
   return (
-    <div className="mb-1">
+    <div>
       {group.messages.map((msg, i) => (
         <MessageRow
           key={msg.id}
@@ -942,10 +921,12 @@ export function MessageFeed({
   );
 
   return (
-    <div className="flex-1 overflow-y-auto scrollbar-thin bg-bg-page px-6 py-5 flex flex-col">
-      {/* Topic summary card */}
+    <div className="flex-1 flex flex-col overflow-hidden bg-bg-page">
+      {/* KLIP RESUMIU — fixo acima do scroll, nunca dentro dele */}
       {topicSummary && <TopicSummaryCard summary={topicSummary} />}
 
+      {/* Área de scroll */}
+      <div className="flex-1 overflow-y-auto scrollbar-thin px-2 py-4 flex flex-col">
       {/* Message groups by date */}
       <div className="flex-1">
         {dateGroups.map((dateGroup) => (
@@ -1000,6 +981,7 @@ export function MessageFeed({
 
       {/* Typing indicator — pinned at bottom */}
       <TypingIndicator users={typingUsers} />
+      </div>{/* fim área de scroll */}
     </div>
   );
 }

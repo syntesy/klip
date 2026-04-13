@@ -1,10 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans, DM_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+});
+
+const dmMono = DM_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  weight: ["400", "500"],
+  display: "swap",
+});
 
 // Clerk reads session cookies at runtime — prevents static pre-render errors
 export const dynamic = "force-dynamic";
@@ -47,7 +59,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const body = (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={`${plusJakartaSans.variable} ${dmMono.variable}`}>
       {/* Inline script runs before paint — prevents light flash on dark-default app */}
       <head>
         <script
@@ -56,7 +68,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.className} bg-bg-page text-text-1 antialiased`}>
+      <body className={`${plusJakartaSans.variable} ${dmMono.variable} bg-bg-page text-text-1 antialiased`} style={{ fontFamily: "var(--font-display, 'Plus Jakarta Sans', system-ui, sans-serif)" }}>
         {children}
         <Toaster position="bottom-right" richColors />
       </body>

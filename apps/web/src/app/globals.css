@@ -2,6 +2,388 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Klip Design System — tokens globais ──────────────────────────────────── */
+:root {
+  /* Fontes */
+  --klip-font-display: var(--font-display, 'Plus Jakarta Sans', system-ui, sans-serif);
+  --klip-font-mono:    var(--font-mono, 'DM Mono', 'Fira Code', monospace);
+
+  /* Fundos */
+  --klip-bg:     #080f1c;
+  --klip-bg-2:   #0c1627;
+  --klip-bg-3:   #101e35;
+  --klip-frame:  #0d1b2e;
+
+  /* Accent */
+  --klip-blue:       #4A9EFF;
+  --klip-blue-dim:   rgba(74,158,255,.09);
+  --klip-blue-bdr:   rgba(74,158,255,.16);
+  --klip-green:      #22C98A;
+  --klip-green-dim:  rgba(34,201,138,.12);
+  --klip-green-bdr:  rgba(34,201,138,.22);
+  --klip-amber:      #F5A94A;
+  --klip-amber-dim:  rgba(245,169,74,.07);
+  --klip-amber-bdr:  rgba(245,169,74,.18);
+
+  /* Texto */
+  --klip-text-1: rgba(255,255,255,.92);
+  --klip-text-2: rgba(255,255,255,.70);
+  --klip-text-3: rgba(255,255,255,.45);
+  --klip-text-4: rgba(255,255,255,.28);
+  --klip-text-5: rgba(255,255,255,.16);
+
+  /* Bordas */
+  --klip-border-1: rgba(255,255,255,.10);
+  --klip-border-2: rgba(255,255,255,.07);
+  --klip-border-3: rgba(255,255,255,.04);
+}
+
+/* ── Animações globais ─────────────────────────────────────────────────────── */
+@keyframes klip-pulse {
+  0%,100% { opacity: .35; transform: scale(1);   }
+  50%     { opacity: 1;   transform: scale(1.4); }
+}
+@keyframes klip-blink {
+  0%,49%  { opacity: 1; }
+  50%,100%{ opacity: 0; }
+}
+
+/* ── App frame ─────────────────────────────────────────────────────────────── */
+.klip-frame {
+  background:    var(--klip-frame);
+  border:        1px solid var(--klip-border-1);
+  border-radius: 18px;
+  overflow:      hidden;
+  box-shadow:    0 40px 80px rgba(0,0,0,.5),
+                 0 0 0 1px rgba(255,255,255,.04);
+}
+
+/* ── Top bar ───────────────────────────────────────────────────────────────── */
+.klip-topbar {
+  background:      rgba(255,255,255,.04);
+  border-bottom:   1px solid var(--klip-border-2);
+  padding:         12px 18px;
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+}
+.klip-dots { display: flex; gap: 6px; }
+.klip-dot  { width: 10px; height: 10px; border-radius: 50%; }
+.klip-dot.red    { background: #FF5F57; }
+.klip-dot.yellow { background: #FFBD2E; }
+.klip-dot.green  { background: #28CA41; }
+
+.klip-tabs { display: flex; gap: 2px; }
+.klip-tab {
+  font-family:   var(--klip-font-display);
+  font-size:     11.5px;
+  font-weight:   500;
+  color:         var(--klip-text-3);
+  background:    transparent;
+  border:        none;
+  padding:       5px 12px;
+  border-radius: 6px;
+  cursor:        pointer;
+  transition:    color .2s, background .2s;
+}
+.klip-tab:hover  { color: var(--klip-text-2); background: rgba(255,255,255,.05); }
+.klip-tab.active { color: #fff;               background: rgba(255,255,255,.12); }
+
+.klip-live {
+  display:     flex;
+  align-items: center;
+  gap:         5px;
+  font-size:   11px;
+  font-weight: 500;
+  color:       var(--klip-green);
+}
+.klip-live-dot {
+  width:         6px;
+  height:        6px;
+  border-radius: 50%;
+  background:    var(--klip-green);
+  animation:     klip-pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────────── */
+.klip-sidebar {
+  width:          200px;
+  flex-shrink:    0;
+  border-right:   1px solid var(--klip-border-2);
+  padding:        16px 12px;
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+}
+.klip-community {
+  display:       flex;
+  align-items:   center;
+  gap:           9px;
+  padding:       8px 10px;
+  border-radius: 8px;
+}
+.klip-community.active { background: rgba(255,255,255,.07); }
+.klip-community-dot {
+  width:         8px;
+  height:        8px;
+  border-radius: 50%;
+  flex-shrink:   0;
+}
+.klip-community-name {
+  font-size:   12px;
+  font-weight: 500;
+  color:       var(--klip-text-3);
+}
+.klip-community-name.active { color: var(--klip-text-1); }
+.klip-divider {
+  height:     1px;
+  background: var(--klip-border-3);
+  margin:     8px 0;
+}
+.klip-topic {
+  display:       flex;
+  align-items:   center;
+  gap:           7px;
+  padding:       7px 10px;
+  border-radius: 6px;
+  font-size:     11px;
+  color:         var(--klip-text-4);
+}
+.klip-topic-dot {
+  width:         6px;
+  height:        6px;
+  border-radius: 50%;
+  flex-shrink:   0;
+}
+
+/* ── Resumo card (KLIP RESUMIU) ────────────────────────────────────────────── */
+.klip-resumo {
+  margin:        14px 16px 0;
+  background:    var(--klip-amber-dim);
+  border:        1px solid var(--klip-amber-bdr);
+  border-left:   3px solid var(--klip-amber);
+  border-radius: 4px 10px 10px 10px;
+  padding:       12px 14px;
+  flex-shrink:   0;
+}
+.klip-resumo.blue {
+  background:  var(--klip-blue-dim);
+  border:      1px solid var(--klip-blue-bdr);
+  border-left: 3px solid var(--klip-blue);
+}
+.klip-resumo.green {
+  background:  var(--klip-green-dim);
+  border:      1px solid var(--klip-green-bdr);
+  border-left: 3px solid var(--klip-green);
+}
+.klip-resumo-header {
+  display:       flex;
+  align-items:   center;
+  gap:           7px;
+  margin-bottom: 7px;
+}
+.klip-resumo-dot {
+  width:         6px;
+  height:        6px;
+  border-radius: 50%;
+  animation:     klip-pulse 1.5s ease-in-out infinite;
+}
+.klip-resumo-label {
+  font-size:      10px;
+  font-weight:    700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.klip-resumo-text {
+  font-size:   11.5px;
+  line-height: 1.55;
+  color:       var(--klip-text-2);
+}
+.klip-resumo-text strong { font-weight: 500; }
+.klip-resumo-items {
+  margin-top:     8px;
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+}
+.klip-resumo-item {
+  font-size:   11px;
+  color:       var(--klip-text-4);
+  display:     flex;
+  align-items: flex-start;
+  gap:         6px;
+}
+.klip-resumo-item::before {
+  content:       '';
+  width:         4px;
+  height:        4px;
+  border-radius: 50%;
+  background:    var(--klip-green);
+  flex-shrink:   0;
+  margin-top:    4px;
+}
+
+/* ── Mensagens ─────────────────────────────────────────────────────────────── */
+.klip-msgs {
+  flex:           1;
+  padding:        12px 16px;
+  display:        flex;
+  flex-direction: column;
+  gap:            10px;
+  overflow:       hidden;
+}
+.klip-msg { display: flex; gap: 8px; align-items: flex-start; }
+.klip-avatar {
+  width:           26px;
+  height:          26px;
+  border-radius:   50%;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  font-size:       9px;
+  font-weight:     700;
+  color:           #fff;
+  flex-shrink:     0;
+}
+.klip-bubble {
+  background:    rgba(255,255,255,.06);
+  border-radius: 4px 10px 10px 10px;
+  padding:       7px 10px;
+  max-width:     280px;
+}
+.klip-bubble-ai {
+  background:    var(--klip-blue-dim);
+  border:        1px solid var(--klip-blue-bdr);
+  border-radius: 4px 10px 10px 10px;
+  padding:       7px 10px;
+  max-width:     300px;
+}
+.klip-ai-label {
+  font-size:      9px;
+  font-weight:    700;
+  color:          var(--klip-blue);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom:  3px;
+}
+.klip-msg-author {
+  font-size:     9.5px;
+  color:         var(--klip-text-4);
+  margin-bottom: 3px;
+}
+.klip-msg-text {
+  font-size:   11.5px;
+  line-height: 1.5;
+  color:       rgba(255,255,255,.80);
+}
+.klip-msg-text strong { color: rgba(255,255,255,.88); font-weight: 600; }
+.klip-badge {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           3px;
+  margin-top:    6px;
+  font-size:     9px;
+  font-weight:   600;
+  border-radius: 10px;
+  padding:       1px 7px;
+}
+.klip-badge.amber {
+  color:      var(--klip-amber);
+  background: rgba(245,169,74,.10);
+  border:     1px solid rgba(245,169,74,.20);
+}
+.klip-badge.blue {
+  color:      var(--klip-blue);
+  background: rgba(74,158,255,.10);
+  border:     1px solid rgba(74,158,255,.20);
+}
+.klip-badge.green {
+  color:      var(--klip-green);
+  background: rgba(34,201,138,.10);
+  border:     1px solid rgba(34,201,138,.20);
+}
+
+/* ── Input bar ─────────────────────────────────────────────────────────────── */
+.klip-input-bar {
+  border-top:  1px solid var(--klip-border-2);
+  padding:     10px 16px;
+  background:  rgba(255,255,255,.02);
+}
+.klip-input-box {
+  background:    rgba(255,255,255,.06);
+  border-radius: 8px;
+  padding:       8px 12px;
+  display:       flex;
+  align-items:   center;
+  gap:           7px;
+}
+.klip-input-cmd {
+  font-family: var(--klip-font-mono);
+  font-size:   12px;
+  font-weight: 600;
+}
+.klip-input-text {
+  font-size: 12px;
+  color:     var(--klip-text-5);
+}
+.klip-cursor {
+  display:    inline-block;
+  width:      2px;
+  height:     12px;
+  animation:  klip-blink .8s infinite;
+}
+
+/* ── Painel direito ────────────────────────────────────────────────────────── */
+.klip-panel-right {
+  width:       210px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--klip-border-2);
+  padding:     14px;
+}
+.klip-panel-title {
+  font-size:      10px;
+  font-weight:    600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color:          var(--klip-text-4);
+  margin-bottom:  12px;
+}
+.klip-decision {
+  background:    rgba(255,255,255,.04);
+  border:        1px solid var(--klip-border-2);
+  border-radius: 8px;
+  padding:       9px 11px;
+  margin-bottom: 7px;
+}
+.klip-decision-title {
+  font-size:   11px;
+  color:       rgba(255,255,255,.68);
+  line-height: 1.4;
+  margin-top:  5px;
+}
+.klip-decision-meta {
+  font-size:  10px;
+  color:      var(--klip-text-4);
+  margin-top: 3px;
+}
+.klip-status {
+  font-size:     9px;
+  font-weight:   700;
+  border-radius: 10px;
+  padding:       2px 8px;
+  display:       inline-block;
+}
+.klip-status.ok {
+  background: var(--klip-green-dim);
+  color:      var(--klip-green);
+  border:     1px solid var(--klip-green-bdr);
+}
+.klip-status.pending {
+  background: rgba(245,169,74,.10);
+  color:      var(--klip-amber);
+  border:     1px solid rgba(245,169,74,.20);
+}
+
 @layer base {
   *, *::before, *::after {
     box-sizing: border-box;
@@ -21,7 +403,7 @@
   body {
     @apply text-text-1;
     transition: background-color 0.2s, color 0.2s;
-    font-family: -apple-system, 'SF Pro Display', system-ui, sans-serif;
+    font-family: var(--klip-font-display);
   }
 
   :root {
@@ -75,48 +457,48 @@
     --color-pill-border: var(--color-blue-border);
   }
 
-  /* ── Dark mode — Navy design system ──────────────────── */
+  /* ── Dark mode — Navy/Klip design system ─────────────── */
   [data-theme="dark"] {
-    /* Fundos */
-    --color-bg-page:    #08111f;
-    --color-bg-surface: #0d1e35;
-    --color-bg-subtle:  #0f1e35;
-    --color-bg-muted:   #091e2e;
+    /* Fundos (alinhados com tokens Klip) */
+    --color-bg-page:    var(--klip-bg,    #080f1c);
+    --color-bg-surface: var(--klip-bg-2,  #0c1627);
+    --color-bg-subtle:  var(--klip-bg-3,  #101e35);
+    --color-bg-muted:   var(--klip-frame, #0d1b2e);
 
     /* Sidebar */
-    --color-sidebar:        #08111f;
-    --color-sidebar-hover:  rgba(255, 255, 255, 0.05);
-    --color-sidebar-border: #1a2e4a;
+    --color-sidebar:        var(--klip-bg, #080f1c);
+    --color-sidebar-hover:  var(--klip-border-2, rgba(255,255,255,.07));
+    --color-sidebar-border: var(--klip-border-1, rgba(255,255,255,.10));
 
     /* Bordas */
-    --color-border:     #1a2e4a;
-    --color-border-mid: #1a3a5a;
+    --color-border:     var(--klip-border-1, rgba(255,255,255,.10));
+    --color-border-mid: var(--klip-border-2, rgba(255,255,255,.07));
 
     /* Texto */
-    --color-text-1: #ffffff;
-    --color-text-2: #f0f6ff;
-    --color-text-3: #e0eaf6;
+    --color-text-1: var(--klip-text-1, rgba(255,255,255,.92));
+    --color-text-2: var(--klip-text-2, rgba(255,255,255,.70));
+    --color-text-3: var(--klip-text-3, rgba(255,255,255,.45));
 
     /* Especiais */
     --color-navy:  #04080f;
     --color-slate: #5a7a9a;
 
     /* Azul */
-    --color-blue:        #4A9EFF;
-    --color-blue-bright: #4A9EFF;
-    --color-blue-dim:    rgba(74, 158, 255, 0.10);
-    --color-blue-dim2:   rgba(74, 158, 255, 0.06);
-    --color-blue-border: rgba(74, 158, 255, 0.35);
-    --color-blue-glow:   rgba(74, 158, 255, 0.12);
+    --color-blue:        var(--klip-blue,     #4A9EFF);
+    --color-blue-bright: var(--klip-blue,     #4A9EFF);
+    --color-blue-dim:    var(--klip-blue-dim, rgba(74,158,255,.09));
+    --color-blue-dim2:   rgba(74,158,255,.06);
+    --color-blue-border: var(--klip-blue-bdr, rgba(74,158,255,.16));
+    --color-blue-glow:   rgba(74,158,255,.12);
 
     /* Verde */
-    --color-green:        #22C98A;
-    --color-green-dim:    rgba(34, 201, 138, 0.12);
-    --color-green-border: rgba(34, 201, 138, 0.35);
+    --color-green:        var(--klip-green,     #22C98A);
+    --color-green-dim:    var(--klip-green-dim, rgba(34,201,138,.12));
+    --color-green-border: var(--klip-green-bdr, rgba(34,201,138,.22));
 
     /* Âmbar */
-    --color-amber:     #F5A623;
-    --color-amber-dim: rgba(245, 166, 35, 0.15);
+    --color-amber:     var(--klip-amber,     #F5A94A);
+    --color-amber-dim: var(--klip-amber-dim, rgba(245,169,74,.07));
 
     /* Semânticos */
     --color-ai-card-bg:    #091e2e;
@@ -124,10 +506,10 @@
     --color-danger-border: rgba(239, 68, 68, 0.30);
 
     /* Input */
-    --color-input-bg:           #0d1e35;
-    --color-input-bg-focus:     #0f2440;
-    --color-input-border:       #1a2e4a;
-    --color-input-border-focus: #4A9EFF;
+    --color-input-bg:           var(--klip-bg-2,  #0c1627);
+    --color-input-bg-focus:     var(--klip-bg-3,  #101e35);
+    --color-input-border:       var(--klip-border-1, rgba(255,255,255,.10));
+    --color-input-border-focus: var(--klip-blue, #4A9EFF);
 
     /* Botão neutro */
     --color-btn-neutral-bg:     transparent;

@@ -25,7 +25,7 @@ function KlipWordmark() {
         color: "#ffffff",
         letterSpacing: "-1.2px",
         lineHeight: 1,
-        fontFamily: "-apple-system, 'SF Pro Display', system-ui, sans-serif",
+        fontFamily: "var(--klip-font-display)",
         userSelect: "none",
       }}
     >
