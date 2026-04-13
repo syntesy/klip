@@ -638,7 +638,7 @@ export function InputArea({
       <div
         role="toolbar"
         aria-label="Ferramentas da mensagem"
-        style={{ display: "flex", alignItems: "flex-start", gap: 10, paddingTop: 8 }}
+        style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 8 }}
       >
         {/* Imagem */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
