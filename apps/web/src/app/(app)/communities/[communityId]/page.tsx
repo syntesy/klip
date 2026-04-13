@@ -1,9 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { NewTopicButton } from "@/components/communities/NewTopicButton";
-import { InviteButton } from "@/components/communities/InviteButton";
-import { DeleteCommunityButton } from "@/components/communities/DeleteCommunityButton";
+import { CommunityActions } from "@/components/communities/CommunityActions";
 
 interface Props {
   params: Promise<{ communityId: string }>;
@@ -45,10 +43,10 @@ function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return "agora";
-  if (mins < 60) return `${mins} min atrás`;
+  if (mins < 60) return `${mins}m`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h atrás`;
-  return `${Math.floor(hours / 24)}d atrás`;
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
 }
 
 const STATUS_LABEL = {
@@ -62,6 +60,25 @@ const STATUS_COLOR = {
   resolved: "#4A9EFF",
   closed: "#5a7a9a",
 } as const;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const AVATAR_COLORS = [
+  "#1249A0", "#0D9B6A", "#7B3FA0", "#B06A00",
+  "#0E7490", "#9D174D", "#065F46", "#1E3A5F",
+];
+
+function avatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) & 0xffffffff;
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]!;
+}
+
+function initials(name: string): string {
+  return name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function CommunityPage({ params }: Props) {
   const { communityId } = await params;
@@ -80,77 +97,181 @@ export default async function CommunityPage({ params }: Props) {
   const topicList = topics ?? [];
   const pinned = topicList.filter((t) => t.isPinned);
   const regular = topicList.filter((t) => !t.isPinned);
+  const totalMessages = topicList.reduce((s, t) => s + t.messageCount, 0);
+
+  const color = avatarColor(community.name);
+  const abbr = initials(community.name);
 
   return (
-    <div className="flex flex-col h-full p-4 md:p-8 max-w-3xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text-1">{community.name}</h1>
-          {community.description && (
-            <p className="text-text-2 mt-1 text-sm">{community.description}</p>
-          )}
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", background: "#08111f" }}>
+
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div style={{ padding: "16px 16px 0", flexShrink: 0 }}>
+        {/* Back link */}
+        <Link
+          href="/communities"
+          style={{ fontSize: 12, color: "#4A9EFF", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 14 }}
+        >
+          <span style={{ fontSize: 14, lineHeight: 1 }}>‹</span>
+          Comunidades
+        </Link>
+
+        {/* Comunidade: ícone + nome + slug */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+          <div
+            style={{
+              width: 44, height: 44, borderRadius: 14,
+              background: color,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 15, fontWeight: 700, color: "#fff",
+              flexShrink: 0,
+            }}
+          >
+            {abbr}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#E8EFF8", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {community.name}
+            </div>
+            <div style={{ fontSize: 12, color: "#6B8BAF", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              /{community.slug}
+              {community.description && <span style={{ marginLeft: 6 }}>· {community.description}</span>}
+            </div>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <DeleteCommunityButton communityId={communityId} communityName={community.name} />
-          <InviteButton communityId={communityId} />
-          <NewTopicButton communityId={communityId} />
-        </div>
+
+        {/* Ações: Novo tópico + Convidar + ··· */}
+        <CommunityActions communityId={communityId} communityName={community.name} />
       </div>
 
-      {topicList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center flex-1 text-center">
-          <p className="font-medium text-text-2">Nenhum tópico ainda</p>
-          <p className="text-sm text-text-3 mt-1">Crie o primeiro tópico desta comunidade</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {pinned.length > 0 && (
-            <section>
-              <p className="text-[11px] font-semibold text-text-3 uppercase tracking-wider mb-2">Fixados</p>
-              <TopicGrid topics={pinned} communityId={communityId} />
-            </section>
-          )}
-          {regular.length > 0 && (
-            <section>
-              {pinned.length > 0 && (
-                <p className="text-[11px] font-semibold text-text-3 uppercase tracking-wider mb-2 mt-2">Todos os tópicos</p>
-              )}
-              <TopicGrid topics={regular} communityId={communityId} />
-            </section>
-          )}
-        </div>
-      )}
+      {/* ── Barra de stats ──────────────────────────────────────────────── */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr 1fr",
+          background: "#0B1628",
+          borderTop: "1px solid rgba(255,255,255,0.05)",
+          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          margin: "14px 0 0",
+          flexShrink: 0,
+        }}
+      >
+        {[
+          { label: "Mensagens", value: totalMessages > 0 ? String(totalMessages) : "–" },
+          { label: "Klips", value: "–" },
+          { label: "Decisões", value: "–" },
+          { label: "Membros", value: "–" },
+        ].map(({ label, value }, i) => (
+          <div
+            key={label}
+            style={{
+              textAlign: "center",
+              padding: "10px 6px",
+              borderLeft: i > 0 ? "1px solid rgba(255,255,255,0.05)" : undefined,
+            }}
+          >
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#E8EFF8", lineHeight: 1.2 }}>{value}</div>
+            <div style={{ fontSize: 9, color: "#6B8BAF", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Lista de tópicos ─────────────────────────────────────────────── */}
+      <div style={{ padding: "16px 16px 24px", flex: 1 }}>
+        {topicList.length === 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, textAlign: "center", paddingTop: 40 }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: "#8AAAC8" }}>Nenhum tópico ainda</p>
+            <p style={{ fontSize: 12, color: "#6B8BAF", marginTop: 4 }}>Crie o primeiro tópico desta comunidade</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {/* Label da seção */}
+            <p style={{ fontSize: 11, fontWeight: 600, color: "#6B8BAF", textTransform: "uppercase", letterSpacing: "1.5px", margin: "0 0 4px" }}>
+              Tópicos
+            </p>
+
+            {/* Fixados */}
+            {pinned.map((topic) => (
+              <TopicCard key={topic.id} topic={topic} communityId={communityId} />
+            ))}
+
+            {/* Regulares */}
+            {regular.map((topic) => (
+              <TopicCard key={topic.id} topic={topic} communityId={communityId} />
+            ))}
+
+            {/* Placeholder criar tópico */}
+            <div
+              style={{
+                border: "1px dashed rgba(255,255,255,0.1)",
+                borderRadius: 14,
+                padding: "16px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                marginTop: 4,
+              }}
+            >
+              <span style={{ fontSize: 16, color: "#3D5A7A", lineHeight: 1 }}>+</span>
+              <span style={{ fontSize: 12, color: "#6B8BAF" }}>Criar tópico</span>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-function TopicGrid({ topics, communityId }: { topics: Topic[]; communityId: string }) {
+// ─── TopicCard ────────────────────────────────────────────────────────────────
+
+function TopicCard({ topic, communityId }: { topic: Topic; communityId: string }) {
   return (
-    <div className="flex flex-col gap-2">
-      {topics.map((topic) => (
-        <Link
-          key={topic.id}
-          href={`/communities/${communityId}/topics/${topic.id}`}
-          className="flex items-start gap-3 bg-bg-surface rounded-xl border border-border p-4 hover:border-blue/40 hover:shadow-sm transition-all no-underline"
-        >
-          <span style={{ marginTop: 6, width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: STATUS_COLOR[topic.status], display: "inline-block" }} />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              {topic.isPinned && <span className="text-[10px] text-text-3">📌</span>}
-              <h3 className="text-[14px] font-medium text-text-1 truncate">{topic.title}</h3>
-              <span className="text-[10px] text-text-3 shrink-0">{STATUS_LABEL[topic.status]}</span>
-            </div>
-            {topic.description && (
-              <p className="text-[12.5px] text-text-3 line-clamp-1">{topic.description}</p>
-            )}
+    <Link
+      href={`/communities/${communityId}/topics/${topic.id}`}
+      className="no-underline block transition-all"
+      style={{
+        background: "#0F1E35",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: 14,
+        padding: "12px 14px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {/* Status dot */}
+        <span
+          style={{
+            width: 7, height: 7, borderRadius: "50%",
+            background: STATUS_COLOR[topic.status],
+            flexShrink: 0,
+            display: "inline-block",
+          }}
+        />
+
+        {/* Título + status label */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {topic.isPinned && <span style={{ fontSize: 10 }}>📌</span>}
+            <span style={{ fontSize: 14, fontWeight: 600, color: "#E8EFF8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {topic.title}
+            </span>
+            <span style={{ fontSize: 10, color: "#6B8BAF", flexShrink: 0 }}>
+              {STATUS_LABEL[topic.status]}
+            </span>
           </div>
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            <span className="text-[12px] font-mono text-text-3">{topic.messageCount} msgs</span>
-            <span className="text-[11px] text-text-3">{timeAgo(topic.lastActivityAt)}</span>
-          </div>
-        </Link>
-      ))}
-    </div>
+          {topic.description && (
+            <p style={{ fontSize: 12, color: "#6B8BAF", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {topic.description}
+            </p>
+          )}
+        </div>
+
+        {/* Contagem + tempo */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#8AAAC8" }}>{topic.messageCount}</span>
+          <span style={{ fontSize: 10, color: "#6B8BAF" }}>{timeAgo(topic.lastActivityAt)}</span>
+        </div>
+      </div>
+    </Link>
   );
 }

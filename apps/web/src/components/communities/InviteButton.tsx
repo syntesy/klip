@@ -13,7 +13,7 @@ type Tab = "link" | "qrcode";
 type LinkStep = "idle" | "loading" | "ready" | "copied";
 type QrStep = "idle" | "loading" | "ready" | "error";
 
-export function InviteButton({ communityId }: Props) {
+export function InviteButton({ communityId, triggerStyle }: Props & { triggerStyle?: React.CSSProperties }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("link");
 
@@ -123,7 +123,8 @@ export function InviteButton({ communityId }: Props) {
       <button
         type="button"
         onClick={handleOpen}
-        className="px-4 py-2 rounded-lg border border-border text-[13px] text-text-2 hover:bg-bg-subtle transition-colors font-medium"
+        className={triggerStyle ? undefined : "px-4 py-2 rounded-lg border border-border text-[13px] text-text-2 hover:bg-bg-subtle transition-colors font-medium"}
+        style={triggerStyle}
       >
         Convidar
       </button>

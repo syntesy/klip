@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-export function NewCommunityButton() {
+export function NewCommunityButton({ variant = "button" }: { variant?: "button" | "card" }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,15 +63,51 @@ export function NewCommunityButton() {
     }
   }
 
+  const trigger = variant === "card" ? (
+    <button
+      type="button"
+      onClick={() => setOpen(true)}
+      style={{
+        width: "100%",
+        background: "transparent",
+        border: "1px dashed rgba(255,255,255,0.1)",
+        borderRadius: 18,
+        padding: "20px 16px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        cursor: "pointer",
+        transition: "border-color 0.2s, background 0.2s",
+      }}
+    >
+      <span style={{ fontSize: 22, color: "#3D5A7A", lineHeight: 1 }}>+</span>
+      <span style={{ fontSize: 12, color: "#6B8BAF" }}>Criar nova comunidade</span>
+    </button>
+  ) : (
+    <button
+      type="button"
+      onClick={() => setOpen(true)}
+      style={{
+        background: "#4A9EFF",
+        color: "#fff",
+        border: "none",
+        borderRadius: 8,
+        padding: "8px 14px",
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+      }}
+    >
+      + Nova
+    </button>
+  );
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="px-4 py-2 bg-blue text-white rounded-lg font-medium hover:bg-blue/90 transition-colors text-sm"
-      >
-        + Nova comunidade
-      </button>
+      {trigger}
 
       {open && (
         <div

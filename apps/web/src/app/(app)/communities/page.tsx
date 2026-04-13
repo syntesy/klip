@@ -2,22 +2,6 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { NewCommunityButton } from "@/components/communities/NewCommunityButton";
 
-// Paleta de cores para o topo dos cards (derivada do nome)
-const CARD_COLORS = [
-  "#1249A0", "#0D9B6A", "#7B3FA0", "#B06A00",
-  "#0E7490", "#9D174D", "#065F46", "#1E3A5F",
-];
-
-function cardColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return CARD_COLORS[Math.abs(hash) % CARD_COLORS.length]!;
-}
-
-function initials(name: string): string {
-  return name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
-}
-
 interface Community {
   id: string;
   name: string;
@@ -45,65 +29,151 @@ async function fetchCommunities(): Promise<Community[]> {
   }
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const AVATAR_COLORS = [
+  "#1249A0", "#0D9B6A", "#7B3FA0", "#B06A00",
+  "#0E7490", "#9D174D", "#065F46", "#1E3A5F",
+];
+
+function avatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) & 0xffffffff;
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]!;
+}
+
+function initials(name: string): string {
+  return name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
+}
+
+// ─── Community Card ───────────────────────────────────────────────────────────
+
+function CommunityCard({ community }: { community: Community }) {
+  const color = avatarColor(community.name);
+  const abbr = initials(community.name);
+
+  return (
+    <Link
+      href={`/communities/${community.id}`}
+      className="block no-underline transition-all"
+      style={{
+        background: "#0F1E35",
+        border: "1px solid rgba(74,158,255,0.12)",
+        borderRadius: 18,
+        overflow: "hidden",
+      }}
+    >
+      {/* Banner */}
+      <div style={{ height: 6, background: "linear-gradient(90deg, #22C98A, #1249A0)" }} />
+
+      <div style={{ padding: "14px 16px 16px" }}>
+        {/* Avatar + nome + badge */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+          <div
+            style={{
+              width: 42, height: 42, borderRadius: 12,
+              background: color,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 14, fontWeight: 700, color: "#fff",
+              flexShrink: 0,
+            }}
+          >
+            {abbr}
+          </div>
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#E8EFF8", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {community.name}
+            </div>
+            <div style={{ fontSize: 11, color: "#6B8BAF", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              /{community.slug}
+            </div>
+          </div>
+
+          {/* Badge ativo */}
+          <div
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              background: "rgba(34,201,138,0.12)",
+              border: "1px solid rgba(34,201,138,0.2)",
+              borderRadius: 20, padding: "3px 8px",
+              flexShrink: 0,
+            }}
+          >
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C98A", flexShrink: 0, display: "inline-block" }} />
+            <span style={{ fontSize: 10, fontWeight: 600, color: "#22C98A" }}>ativo</span>
+          </div>
+        </div>
+
+        {/* Stats 3 colunas */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", marginBottom: 12 }}>
+          {[
+            { label: "mensagens", value: "–" },
+            { label: "membros", value: "–" },
+            { label: "tópicos", value: "–" },
+          ].map(({ label, value }, i) => (
+            <div
+              key={label}
+              style={{
+                textAlign: "center",
+                paddingTop: 8, paddingBottom: 8,
+                borderLeft: i > 0 ? "1px solid rgba(255,255,255,0.05)" : undefined,
+              }}
+            >
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#E8EFF8", lineHeight: 1.2 }}>{value}</div>
+              <div style={{ fontSize: 10, color: "#6B8BAF", marginTop: 2 }}>{label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Descrição (se existir, no lugar do pill de tópico) */}
+        {community.description && (
+          <div
+            style={{
+              background: "rgba(74,158,255,0.06)",
+              border: "1px solid rgba(74,158,255,0.08)",
+              borderRadius: 8,
+              padding: "7px 10px",
+              fontSize: 12,
+              color: "#8AAAC8",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {community.description}
+          </div>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default async function CommunitiesPage() {
   const communities = await fetchCommunities();
 
   return (
-    <div className="flex flex-col h-full p-4 md:p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", padding: "20px 16px", overflowY: "auto" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, gap: 12 }}>
         <div>
-          <h1 className="text-2xl font-bold text-text-1">Minhas comunidades</h1>
-          <p className="text-text-2 mt-1">Acesse e gerencie suas comunidades</p>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#E8EFF8", margin: 0, lineHeight: 1.2 }}>Comunidades</h1>
+          <p style={{ fontSize: 12, color: "#6B8BAF", margin: "4px 0 0" }}>Gerencie seus espaços</p>
         </div>
-        <NewCommunityButton />
+        <NewCommunityButton variant="button" />
       </div>
 
-      {communities.length === 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="bg-bg-surface rounded-xl border border-gray-100 p-6 text-center text-text-3">
-            <p className="text-4xl mb-3">🌐</p>
-            <p className="font-medium text-text-2">Nenhuma comunidade ainda</p>
-            <p className="text-sm mt-1">Crie sua primeira comunidade para começar</p>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {communities.map((community) => {
-            const color = cardColor(community.name);
-            const abbr = initials(community.name);
-            return (
-              <Link
-                key={community.id}
-                href={`/communities/${community.id}`}
-                className="block no-underline rounded-xl overflow-hidden transition-all hover:shadow-md"
-                style={{ background: "var(--color-bg-surface)", border: "0.5px solid var(--color-border)" }}
-              >
-                {/* Faixa colorida no topo */}
-                <div style={{ height: 6, background: color }} />
-                <div className="p-5">
-                  {/* Badge de iniciais + nome */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div
-                      className="flex items-center justify-center text-[13px] font-bold text-white shrink-0"
-                      style={{ width: 38, height: 38, borderRadius: 10, background: color }}
-                    >
-                      {abbr}
-                    </div>
-                    <div className="min-w-0">
-                      <h2 className="text-[14px] font-semibold text-text-1 truncate">{community.name}</h2>
-                      <p className="text-[11px] text-text-3 font-mono truncate">/{community.slug}</p>
-                    </div>
-                  </div>
-                  {/* Descrição */}
-                  {community.description && (
-                    <p className="text-[12.5px] text-text-3 line-clamp-2 leading-[1.5]">{community.description}</p>
-                  )}
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      )}
+      {/* Lista de cards */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {communities.map((community) => (
+          <CommunityCard key={community.id} community={community} />
+        ))}
+
+        {/* Card placeholder — criar nova comunidade */}
+        <NewCommunityButton variant="card" />
+      </div>
     </div>
   );
 }
