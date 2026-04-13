@@ -103,7 +103,7 @@ export default async function CommunityPage({ params }: Props) {
   const abbr = initials(community.name);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", background: "#08111f" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", background: "var(--color-bg-page)" }}>
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div style={{ padding: "16px 16px 0", flexShrink: 0 }}>
@@ -130,10 +130,10 @@ export default async function CommunityPage({ params }: Props) {
             {abbr}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#E8EFF8", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "var(--color-text-1)", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {community.name}
             </div>
-            <div style={{ fontSize: 12, color: "#6B8BAF", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: 12, color: "var(--color-text-3)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               /{community.slug}
               {community.description && <span style={{ marginLeft: 6 }}>· {community.description}</span>}
             </div>
@@ -149,9 +149,9 @@ export default async function CommunityPage({ params }: Props) {
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr 1fr",
-          background: "#0B1628",
-          borderTop: "1px solid rgba(255,255,255,0.05)",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          background: "var(--color-bg-muted)",
+          borderTop: "1px solid var(--color-border-mid)",
+          borderBottom: "1px solid var(--color-border-mid)",
           margin: "14px 0 0",
           flexShrink: 0,
         }}
@@ -167,11 +167,11 @@ export default async function CommunityPage({ params }: Props) {
             style={{
               textAlign: "center",
               padding: "10px 6px",
-              borderLeft: i > 0 ? "1px solid rgba(255,255,255,0.05)" : undefined,
+              borderLeft: i > 0 ? "1px solid var(--color-border-mid)" : undefined,
             }}
           >
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#E8EFF8", lineHeight: 1.2 }}>{value}</div>
-            <div style={{ fontSize: 9, color: "#6B8BAF", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-text-1)", lineHeight: 1.2 }}>{value}</div>
+            <div style={{ fontSize: 9, color: "var(--color-text-3)", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</div>
           </div>
         ))}
       </div>
@@ -180,13 +180,13 @@ export default async function CommunityPage({ params }: Props) {
       <div style={{ padding: "16px 16px 24px", flex: 1 }}>
         {topicList.length === 0 ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, textAlign: "center", paddingTop: 40 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: "#8AAAC8" }}>Nenhum tópico ainda</p>
-            <p style={{ fontSize: 12, color: "#6B8BAF", marginTop: 4 }}>Crie o primeiro tópico desta comunidade</p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text-2)" }}>Nenhum tópico ainda</p>
+            <p style={{ fontSize: 12, color: "var(--color-text-3)", marginTop: 4 }}>Crie o primeiro tópico desta comunidade</p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {/* Label da seção */}
-            <p style={{ fontSize: 11, fontWeight: 600, color: "#6B8BAF", textTransform: "uppercase", letterSpacing: "1.5px", margin: "0 0 4px" }}>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--color-text-3)", textTransform: "uppercase", letterSpacing: "1.5px", margin: "0 0 4px" }}>
               Tópicos
             </p>
 
@@ -203,7 +203,7 @@ export default async function CommunityPage({ params }: Props) {
             {/* Placeholder criar tópico */}
             <div
               style={{
-                border: "1px dashed rgba(255,255,255,0.1)",
+                border: "1px dashed var(--color-border)",
                 borderRadius: 14,
                 padding: "16px",
                 display: "flex",
@@ -213,8 +213,8 @@ export default async function CommunityPage({ params }: Props) {
                 marginTop: 4,
               }}
             >
-              <span style={{ fontSize: 16, color: "#3D5A7A", lineHeight: 1 }}>+</span>
-              <span style={{ fontSize: 12, color: "#6B8BAF" }}>Criar tópico</span>
+              <span style={{ fontSize: 16, color: "var(--color-text-3)", lineHeight: 1 }}>+</span>
+              <span style={{ fontSize: 12, color: "var(--color-text-3)" }}>Criar tópico</span>
             </div>
           </div>
         )}
@@ -231,8 +231,8 @@ function TopicCard({ topic, communityId }: { topic: Topic; communityId: string }
       href={`/communities/${communityId}/topics/${topic.id}`}
       className="no-underline block transition-all"
       style={{
-        background: "#0F1E35",
-        border: "1px solid rgba(255,255,255,0.06)",
+        background: "var(--color-bg-surface)",
+        border: "1px solid var(--color-border)",
         borderRadius: 14,
         padding: "12px 14px",
       }}
@@ -252,15 +252,15 @@ function TopicCard({ topic, communityId }: { topic: Topic; communityId: string }
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             {topic.isPinned && <span style={{ fontSize: 10 }}>📌</span>}
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#E8EFF8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {topic.title}
             </span>
-            <span style={{ fontSize: 10, color: "#6B8BAF", flexShrink: 0 }}>
+            <span style={{ fontSize: 10, color: "var(--color-text-3)", flexShrink: 0 }}>
               {STATUS_LABEL[topic.status]}
             </span>
           </div>
           {topic.description && (
-            <p style={{ fontSize: 12, color: "#6B8BAF", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <p style={{ fontSize: 12, color: "var(--color-text-3)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {topic.description}
             </p>
           )}
@@ -268,8 +268,8 @@ function TopicCard({ topic, communityId }: { topic: Topic; communityId: string }
 
         {/* Contagem + tempo */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#8AAAC8" }}>{topic.messageCount}</span>
-          <span style={{ fontSize: 10, color: "#6B8BAF" }}>{timeAgo(topic.lastActivityAt)}</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-2)" }}>{topic.messageCount}</span>
+          <span style={{ fontSize: 10, color: "var(--color-text-3)" }}>{timeAgo(topic.lastActivityAt)}</span>
         </div>
       </div>
     </Link>

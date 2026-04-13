@@ -395,7 +395,7 @@
   * { scrollbar-width: none; }
 
   html, body {
-    background: #08111f;
+    background: var(--color-bg-page);
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
   }

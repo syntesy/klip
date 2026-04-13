@@ -70,7 +70,7 @@ export function NewCommunityButton({ variant = "button" }: { variant?: "button" 
       style={{
         width: "100%",
         background: "transparent",
-        border: "1px dashed rgba(255,255,255,0.1)",
+        border: "1px dashed var(--color-border)",
         borderRadius: 18,
         padding: "20px 16px",
         display: "flex",
@@ -82,8 +82,8 @@ export function NewCommunityButton({ variant = "button" }: { variant?: "button" 
         transition: "border-color 0.2s, background 0.2s",
       }}
     >
-      <span style={{ fontSize: 22, color: "#3D5A7A", lineHeight: 1 }}>+</span>
-      <span style={{ fontSize: 12, color: "#6B8BAF" }}>Criar nova comunidade</span>
+      <span style={{ fontSize: 22, color: "var(--color-text-3)", lineHeight: 1 }}>+</span>
+      <span style={{ fontSize: 12, color: "var(--color-text-3)" }}>Criar nova comunidade</span>
     </button>
   ) : (
     <button

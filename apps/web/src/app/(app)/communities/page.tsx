@@ -57,8 +57,8 @@ function CommunityCard({ community }: { community: Community }) {
       href={`/communities/${community.id}`}
       className="block no-underline transition-all"
       style={{
-        background: "#0F1E35",
-        border: "1px solid rgba(74,158,255,0.12)",
+        background: "var(--color-bg-surface)",
+        border: "1px solid var(--color-blue-border)",
         borderRadius: 18,
         overflow: "hidden",
       }}
@@ -82,10 +82,10 @@ function CommunityCard({ community }: { community: Community }) {
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#E8EFF8", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text-1)", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {community.name}
             </div>
-            <div style={{ fontSize: 11, color: "#6B8BAF", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: 11, color: "var(--color-text-3)", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               /{community.slug}
             </div>
           </div>
@@ -117,11 +117,11 @@ function CommunityCard({ community }: { community: Community }) {
               style={{
                 textAlign: "center",
                 paddingTop: 8, paddingBottom: 8,
-                borderLeft: i > 0 ? "1px solid rgba(255,255,255,0.05)" : undefined,
+                borderLeft: i > 0 ? "1px solid var(--color-border-mid)" : undefined,
               }}
             >
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#E8EFF8", lineHeight: 1.2 }}>{value}</div>
-              <div style={{ fontSize: 10, color: "#6B8BAF", marginTop: 2 }}>{label}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-1)", lineHeight: 1.2 }}>{value}</div>
+              <div style={{ fontSize: 10, color: "var(--color-text-3)", marginTop: 2 }}>{label}</div>
             </div>
           ))}
         </div>
@@ -130,12 +130,12 @@ function CommunityCard({ community }: { community: Community }) {
         {community.description && (
           <div
             style={{
-              background: "rgba(74,158,255,0.06)",
-              border: "1px solid rgba(74,158,255,0.08)",
+              background: "var(--color-blue-dim)",
+              border: "1px solid var(--color-blue-border)",
               borderRadius: 8,
               padding: "7px 10px",
               fontSize: 12,
-              color: "#8AAAC8",
+              color: "var(--color-text-2)",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -155,12 +155,12 @@ export default async function CommunitiesPage() {
   const communities = await fetchCommunities();
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", padding: "20px 16px", overflowY: "auto" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", padding: "20px 16px", overflowY: "auto", background: "var(--color-bg-page)" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#E8EFF8", margin: 0, lineHeight: 1.2 }}>Comunidades</h1>
-          <p style={{ fontSize: 12, color: "#6B8BAF", margin: "4px 0 0" }}>Gerencie seus espaços</p>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "var(--color-text-1)", margin: 0, lineHeight: 1.2 }}>Comunidades</h1>
+          <p style={{ fontSize: 12, color: "var(--color-text-3)", margin: "4px 0 0" }}>Gerencie seus espaços</p>
         </div>
         <NewCommunityButton variant="button" />
       </div>

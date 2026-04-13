@@ -96,7 +96,7 @@ function TopNav({ onMenuOpen }: TopNavProps) {
     <div
       className="md:hidden shrink-0 flex items-center justify-between"
       style={{
-        background: "#08111f",
+        background: "var(--color-sidebar)",
         paddingTop: "max(8px, env(safe-area-inset-top, 8px))",
         paddingBottom: 10,
         paddingLeft: 18,

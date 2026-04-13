@@ -38,10 +38,10 @@ export function CommunityActions({ communityId, communityName }: Props) {
   }
 
   const secondaryStyle: React.CSSProperties = {
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.08)",
+    background: "var(--color-bg-subtle)",
+    border: "1px solid var(--color-border)",
     borderRadius: 10,
-    color: "#E8EFF8",
+    color: "var(--color-text-1)",
     padding: "10px 14px",
     fontSize: 13,
     fontWeight: 500,
@@ -85,10 +85,10 @@ export function CommunityActions({ communityId, communityName }: Props) {
               width: 38,
               height: "100%",
               minHeight: 40,
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: "var(--color-bg-subtle)",
+              border: "1px solid var(--color-border)",
               borderRadius: 10,
-              color: "#8AAAC8",
+              color: "var(--color-text-2)",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -112,12 +112,12 @@ export function CommunityActions({ communityId, communityName }: Props) {
                   top: "calc(100% + 6px)",
                   right: 0,
                   zIndex: 100,
-                  background: "#0F1E35",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "var(--color-bg-surface)",
+                  border: "1px solid var(--color-border)",
                   borderRadius: 10,
                   padding: 4,
                   minWidth: 190,
-                  boxShadow: "0 8px 24px rgba(0,0,0,.4)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,.25)",
                 }}
               >
                 <button

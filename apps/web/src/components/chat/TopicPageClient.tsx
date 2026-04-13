@@ -308,13 +308,13 @@ export function TopicPageClient({
           onClick={(e) => e.target === e.currentTarget && setShowVoiceConfirm(false)}
         >
           <div style={{
-            background: "#0D1525", border: "1px solid rgba(255,255,255,.1)",
+            background: "var(--color-bg-surface)", border: "1px solid var(--color-border)",
             borderRadius: 12, padding: 28, width: 360,
           }}>
-            <h3 style={{ color: "#F0F4FA", fontSize: 16, marginBottom: 8 }}>
+            <h3 style={{ color: "var(--color-text-1)", fontSize: 16, marginBottom: 8 }}>
               Iniciar áudio ao vivo?
             </h3>
-            <p style={{ color: "#6B8BAF", fontSize: 13, marginBottom: 24 }}>
+            <p style={{ color: "var(--color-text-3)", fontSize: 13, marginBottom: 24 }}>
               Todos os membros online serão notificados.
             </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
