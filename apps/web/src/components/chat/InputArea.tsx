@@ -492,6 +492,31 @@ export function InputArea({
 
   const formatTimer = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
+  // ── Toolbar style helpers ────────────────────────────────────────────────
+  function actionBtn(danger = false): React.CSSProperties {
+    return {
+      display: "inline-flex", alignItems: "center", gap: 6,
+      padding: "6px 10px", borderRadius: 8,
+      fontSize: 13, fontWeight: 400,
+      color: danger ? "#ef4444" : "rgba(255,255,255,.55)",
+      background: "transparent", border: "none",
+      cursor: "pointer", whiteSpace: "nowrap",
+      transition: "color .2s, background .2s",
+      flexShrink: 0,
+    };
+  }
+  function sep(): React.CSSProperties {
+    return { width: 1, height: 16, background: "rgba(255,255,255,.1)", margin: "0 6px", flexShrink: 0, display: "inline-block" };
+  }
+  function applyHover(e: React.MouseEvent<HTMLButtonElement>, danger: boolean) {
+    e.currentTarget.style.color = danger ? "#ef4444" : "rgba(255,255,255,.85)";
+    e.currentTarget.style.background = danger ? "rgba(239,68,68,.08)" : "rgba(255,255,255,.06)";
+  }
+  function removeHover(e: React.MouseEvent<HTMLButtonElement>, danger = false) {
+    e.currentTarget.style.color = danger ? "#ef4444" : "rgba(255,255,255,.55)";
+    e.currentTarget.style.background = "transparent";
+  }
+
   return (
     <div
       className="flex flex-col gap-2 px-4 md:px-5 py-3 pb-safe shrink-0"
@@ -634,141 +659,114 @@ export function InputArea({
         </button>
       </div>
 
-      {/* ── Barra de ações — SEMPRE VISÍVEL ─────────────────────────────── */}
+      {/* ── Barra de ações — linha única ─────────────────────────────────── */}
       <div
         role="toolbar"
         aria-label="Ferramentas da mensagem"
-        style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 8 }}
+        style={{ display: "flex", alignItems: "center", gap: 0, padding: "10px 0 2px", height: 42 }}
       >
         {/* Imagem */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-          <button
-            type="button"
-            onClick={handleImageButtonClick}
-            disabled={disabled || recording}
-            aria-label="Anexar imagem"
-            style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: "#0f1e35",
-              border: "1px solid rgba(255,255,255,0.18)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#ffffff", cursor: "pointer", flexShrink: 0,
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-              <rect x="1.5" y="1.5" width="13" height="13" rx="2" />
-              <circle cx="5.5" cy="5.5" r="1.5" fill="currentColor" stroke="none" />
-              <path d="M14.5 10.5L10.5 6.5L6.5 10.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <span style={{ fontSize: 9, color: "#8AAAC8", fontWeight: 500, lineHeight: 1 }}>Imagem</span>
-        </div>
+        <button
+          type="button"
+          onClick={handleImageButtonClick}
+          disabled={disabled || recording}
+          aria-label="Anexar imagem"
+          style={actionBtn()}
+          onMouseEnter={e => applyHover(e, false)}
+          onMouseLeave={e => removeHover(e)}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ opacity: .7, flexShrink: 0 }} aria-hidden="true">
+            <rect x="1.5" y="1.5" width="13" height="13" rx="2" />
+            <circle cx="5.5" cy="5.5" r="1.5" fill="currentColor" stroke="none" />
+            <path d="M14.5 10.5L10.5 6.5L6.5 10.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Imagem
+        </button>
 
         {/* Áudio */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-          <button
-            type="button"
-            onClick={handleMicButton}
-            disabled={disabled}
-            aria-label={recording ? "Parar gravação" : "Gravar áudio"}
-            style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: recording ? "rgba(239,68,68,.12)" : "#0f1e35",
-              border: recording ? "1px solid rgba(239,68,68,.5)" : "1px solid rgba(255,255,255,0.18)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: recording ? "#ef4444" : "#ffffff", cursor: "pointer", flexShrink: 0,
-            }}
-          >
-            {recording ? (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                <rect x="3" y="3" width="10" height="10" rx="2" />
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-                <rect x="5" y="1.5" width="6" height="8" rx="3" />
-                <path d="M3 9c0 2.8 2.2 5 5 5s5-2.2 5-5" strokeLinecap="round" />
-                <path d="M8 14v1.5" strokeLinecap="round" />
-              </svg>
-            )}
-          </button>
-          <span style={{ fontSize: 9, color: recording ? "#ef4444" : "#8AAAC8", fontWeight: 500, lineHeight: 1 }}>
-            {recording ? formatTimer(recordingSeconds) : "Áudio"}
-          </span>
-        </div>
+        <button
+          type="button"
+          onClick={handleMicButton}
+          disabled={disabled}
+          aria-label={recording ? "Parar gravação" : "Gravar áudio"}
+          style={actionBtn(recording)}
+          onMouseEnter={e => applyHover(e, recording)}
+          onMouseLeave={e => removeHover(e, recording)}
+        >
+          {recording ? (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style={{ opacity: .85, flexShrink: 0 }} aria-hidden="true">
+              <rect x="3" y="3" width="10" height="10" rx="2" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ opacity: .7, flexShrink: 0 }} aria-hidden="true">
+              <rect x="5" y="1.5" width="6" height="8" rx="3" />
+              <path d="M3 9c0 2.8 2.2 5 5 5s5-2.2 5-5" strokeLinecap="round" />
+              <path d="M8 14v1.5" strokeLinecap="round" />
+            </svg>
+          )}
+          {recording ? formatTimer(recordingSeconds) : "Áudio"}
+        </button>
+
+        {/* Separador */}
+        <span style={sep()} />
 
         {/* Decisão */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-          <button
-            type="button"
-            onClick={onMarkDecision}
-            disabled={disabled}
-            aria-label="Marcar como decisão"
-            style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: "#0f1e35",
-              border: "1px solid rgba(255,255,255,0.18)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#ffffff", cursor: "pointer", flexShrink: 0,
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-              <path d="M3 3C3 2.45 3.45 2 4 2H10L13 5V14C13 14.55 12.55 15 12 15H4C3.45 15 3 14.55 3 14V3Z" />
-              <path d="M10 2V5H13" strokeLinecap="round" />
-              <path d="M5.5 8.5H10.5" strokeLinecap="round" />
-              <path d="M5.5 11H10.5" strokeLinecap="round" />
-            </svg>
-          </button>
-          <span style={{ fontSize: 9, color: "#8AAAC8", fontWeight: 500, lineHeight: 1 }}>Decisão</span>
-        </div>
+        <button
+          type="button"
+          onClick={onMarkDecision}
+          disabled={disabled}
+          aria-label="Marcar como decisão"
+          style={actionBtn()}
+          onMouseEnter={e => applyHover(e, false)}
+          onMouseLeave={e => removeHover(e)}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ opacity: .7, flexShrink: 0 }} aria-hidden="true">
+            <path d="M3 3C3 2.45 3.45 2 4 2H10L13 5V14C13 14.55 12.55 15 12 15H4C3.45 15 3 14.55 3 14V3Z" />
+            <path d="M10 2V5H13" strokeLinecap="round" />
+            <path d="M5.5 8.5H10.5" strokeLinecap="round" />
+            <path d="M5.5 11H10.5" strokeLinecap="round" />
+          </svg>
+          Decisão
+        </button>
 
         {/* Enquete — só admin */}
         {isAdmin && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-            <button
-              type="button"
-              onClick={() => {/* TODO fase 4 */}}
-              disabled={disabled}
-              aria-label="Criar enquete"
-              style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: "#0f1e35",
-                border: "1px solid rgba(255,255,255,0.18)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "#ffffff", cursor: "pointer", flexShrink: 0,
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
-                <rect x="2" y="11" width="3" height="3" rx="0.5" />
-                <rect x="6.5" y="7" width="3" height="7" rx="0.5" />
-                <rect x="11" y="3" width="3" height="11" rx="0.5" />
-              </svg>
-            </button>
-            <span style={{ fontSize: 9, color: "#8AAAC8", fontWeight: 500, lineHeight: 1 }}>Enquete</span>
-          </div>
-        )}
-
-        {/* @klip · IA — empurrado para a direita */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginLeft: "auto" }}>
           <button
             type="button"
-            onClick={onRequestSummary}
+            onClick={() => {/* TODO fase 4 */}}
             disabled={disabled}
-            aria-label="@klip — Resumir com IA"
-            style={{
-              height: 36, borderRadius: 10,
-              background: "#091e2e",
-              border: "1px solid #4A9EFF",
-              display: "flex", alignItems: "center",
-              padding: "0 12px", gap: 3,
-              cursor: "pointer", flexShrink: 0,
-              whiteSpace: "nowrap",
-            }}
+            aria-label="Criar enquete"
+            style={actionBtn()}
+            onMouseEnter={e => applyHover(e, false)}
+            onMouseLeave={e => removeHover(e)}
           >
-            <span style={{ fontSize: 11, fontWeight: 800, color: "#4A9EFF", lineHeight: 1 }}>@klip</span>
-            <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.7)", lineHeight: 1 }}>· IA</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ opacity: .7, flexShrink: 0 }} aria-hidden="true">
+              <rect x="2" y="11" width="3" height="3" rx="0.5" />
+              <rect x="6.5" y="7" width="3" height="7" rx="0.5" />
+              <rect x="11" y="3" width="3" height="11" rx="0.5" />
+            </svg>
+            Enquete
           </button>
-          <span style={{ fontSize: 9, color: "#4A9EFF", fontWeight: 700, lineHeight: 1 }}>resumir</span>
-        </div>
+        )}
+
+        {/* Separador */}
+        <span style={sep()} />
+
+        {/* @klip resumir */}
+        <button
+          type="button"
+          onClick={onRequestSummary}
+          disabled={disabled}
+          aria-label="@klip — Resumir com IA"
+          style={{ ...actionBtn(), color: "#22C98A", fontWeight: 500 }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(34,201,138,.08)"; e.currentTarget.style.color = "#22C98A"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#22C98A"; }}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, opacity: .9 }} aria-hidden="true">
+            <path d="M7 1L8.2 5.1L12.5 7L8.2 8.9L7 13L5.8 8.9L1.5 7L5.8 5.1L7 1Z" stroke="#22C98A" strokeWidth="1.1" strokeLinejoin="round" fill="rgba(34,201,138,.15)" />
+          </svg>
+          @klip resumir
+        </button>
       </div>
 
       {/* Input oculto para seleção de imagem */}
