@@ -407,54 +407,66 @@
   }
 
   :root {
-    /* ── Light mode ────────────────────────────────────── */
-    --color-bg-page:    #F0F4FA;
+    /* ── Light mode — Klip brand ──────────────────────── */
+
+    /* Backgrounds */
+    --color-bg-page:    #F4F6FA;
     --color-bg-surface: #FFFFFF;
-    --color-bg-subtle:  #E2E8F3;
-    --color-bg-muted:   #D6DFF0;
-    --color-sidebar:    #E8EDF5;
-    --color-sidebar-hover:  #DDE3EF;
-    --color-sidebar-border: #D0D8EC;
+    --color-bg-subtle:  #EEF2F8;
+    --color-bg-muted:   #E6EDF8;
 
-    --color-blue:        #1249A0;
+    /* Sidebar — always Navy, never white */
+    --color-sidebar:        #0B1628;
+    --color-sidebar-hover:  rgba(255,255,255,.06);
+    --color-sidebar-border: rgba(255,255,255,.10);
+
+    /* Texto sobre fundo claro */
+    --color-text-1: #0B1628;
+    --color-text-2: #2C3A4A;
+    --color-text-3: #56687A;
+
+    /* Bordas sobre fundo claro */
+    --color-border:     rgba(11,22,40,.10);
+    --color-border-mid: rgba(11,22,40,.07);
+
+    /* Accents — exatos do brand */
+    --color-blue:        #4A9EFF;
     --color-blue-bright: #4A9EFF;
-    --color-blue-dim:    rgba(18, 73, 160, 0.07);
-    --color-blue-dim2:   rgba(18, 73, 160, 0.04);
-    --color-blue-border: rgba(18, 73, 160, 0.15);
-    --color-blue-glow:   rgba(18, 73, 160, 0.12);
+    --color-blue-dim:    rgba(74,158,255,.08);
+    --color-blue-dim2:   rgba(74,158,255,.05);
+    --color-blue-border: rgba(74,158,255,.20);
+    --color-blue-glow:   rgba(74,158,255,.15);
 
-    --color-green:        #0D9B6A;
-    --color-green-dim:    rgba(13, 155, 106, 0.09);
-    --color-green-border: rgba(13, 155, 106, 0.22);
+    --color-green:        #22C98A;
+    --color-green-dim:    rgba(34,201,138,.10);
+    --color-green-border: rgba(34,201,138,.25);
 
-    --color-amber:     #B06A00;
-    --color-amber-dim: rgba(176, 106, 0, 0.08);
+    --color-amber:     #F5A94A;
+    --color-amber-dim: rgba(245,169,74,.10);
 
-    --color-text-1: #0F1923;
-    --color-text-2: #4A5568;
-    --color-text-3: #8A96A8;
+    /* Especiais */
+    --color-navy:       #0B1628;
+    --color-anchor:     #1249A0;
+    --color-slate:      #56687A;
+    --color-ai-card-bg: rgba(74,158,255,.05);
 
-    --color-border:     #DDE3EE;
-    --color-border-mid: #C8D0E0;
-
-    --color-navy:  #0B1628;
-    --color-slate: #6B8BAF;
-
-    --color-ai-card-bg:    #F0F6FF;
     --color-danger-dim:    #fef2f2;
     --color-danger-border: #fca5a5;
 
-    --color-input-bg:           var(--color-bg-subtle);
-    --color-input-bg-focus:     var(--color-bg-surface);
-    --color-input-border:       var(--color-border);
-    --color-input-border-focus: var(--color-blue-border);
+    /* Input */
+    --color-input-bg:           #F4F6FA;
+    --color-input-bg-focus:     #FFFFFF;
+    --color-input-border:       rgba(11,22,40,.10);
+    --color-input-border-focus: #4A9EFF;
 
+    /* Botão neutro */
     --color-btn-neutral-bg:     transparent;
-    --color-btn-neutral-border: var(--color-border);
-    --color-btn-neutral-color:  var(--color-text-2);
+    --color-btn-neutral-border: rgba(11,22,40,.10);
+    --color-btn-neutral-color:  #56687A;
 
-    --color-pill-text:   var(--color-blue-bright);
-    --color-pill-border: var(--color-blue-border);
+    /* Pill de contexto */
+    --color-pill-text:   #1249A0;
+    --color-pill-border: rgba(74,158,255,.20);
   }
 
   /* ── Dark mode — Navy/Klip design system ─────────────── */
@@ -522,10 +534,93 @@
   }
 }
 
-/* ── Sidebar dark mode scoped contrast ──────────────────────────────────────── */
-[data-theme="dark"] nav[aria-label="Navegação principal"] {
-  --color-text-2: #c8d8e8;
-  --color-text-3: #5a7a9a;
+/* ── Sidebar — sempre Navy, qualquer tema ──────────────────────────────────── */
+nav[aria-label="Navegação principal"] {
+  --color-text-1: rgba(255,255,255,.90);
+  --color-text-2: rgba(255,255,255,.60);
+  --color-text-3: rgba(255,255,255,.28);
+  --color-sidebar-hover:  rgba(255,255,255,.06);
+  --color-sidebar-border: rgba(255,255,255,.10);
+}
+
+/* ── Light mode overrides para componentes Klip ───────────────────────────── */
+:root .klip-resumo-text,
+[data-theme="light"] .klip-resumo-text {
+  color: #2C3A4A;
+}
+:root .klip-resumo-label,
+[data-theme="light"] .klip-resumo-label {
+  color: #1249A0;
+}
+:root .klip-msg-text,
+[data-theme="light"] .klip-msg-text {
+  color: #2C3A4A;
+}
+:root .klip-msg-author,
+[data-theme="light"] .klip-msg-author {
+  color: #8FA3B8;
+}
+:root .klip-ai-label,
+[data-theme="light"] .klip-ai-label {
+  color: #1249A0;
+}
+:root .klip-decision-title,
+[data-theme="light"] .klip-decision-title {
+  color: #2C3A4A;
+}
+:root .klip-decision-meta,
+[data-theme="light"] .klip-decision-meta {
+  color: #8FA3B8;
+}
+:root .klip-decision,
+[data-theme="light"] .klip-decision {
+  background: #F4F6FA;
+  border-color: rgba(11,22,40,.08);
+}
+:root .klip-panel-title,
+[data-theme="light"] .klip-panel-title {
+  color: #8FA3B8;
+}
+:root .klip-topic,
+[data-theme="light"] .klip-topic {
+  color: #56687A;
+}
+:root .klip-divider,
+[data-theme="light"] .klip-divider {
+  background: rgba(11,22,40,.06);
+}
+:root .klip-resumo-item,
+[data-theme="light"] .klip-resumo-item {
+  color: #56687A;
+}
+
+/* Mensagens: card bubble no light mode */
+:root .klip-bubble,
+[data-theme="light"] .klip-bubble {
+  background:  #FFFFFF;
+  border:      1px solid rgba(11,22,40,.07);
+  box-shadow:  0 1px 3px rgba(11,22,40,.06);
+}
+:root .klip-bubble-ai,
+[data-theme="light"] .klip-bubble-ai {
+  background:  rgba(74,158,255,.06);
+  border:      1px solid rgba(74,158,255,.18);
+}
+
+/* Badge klipado — sempre verde em qualquer tema */
+:root .klip-badge.green,
+[data-theme="light"] .klip-badge.green {
+  color:      #1a8c65;
+  background: rgba(34,201,138,.10);
+  border:     1px solid rgba(34,201,138,.25);
+}
+
+/* MessageFeed card wrapper no light mode */
+:root .klip-msg-card,
+[data-theme="light"] .klip-msg-card {
+  background:   #FFFFFF;
+  border:       1px solid rgba(11,22,40,.07);
+  box-shadow:   0 1px 3px rgba(11,22,40,.06);
 }
 
 @layer utilities {

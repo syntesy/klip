@@ -642,9 +642,9 @@ function MessageRow({
         id={`msg-${msg.id}`}
         className="flex gap-[11px]"
         style={{
-          background: "rgba(74,158,255,.035)",
-          border: "1px solid rgba(74,158,255,.15)",
-          borderLeft: "3px solid #4A9EFF",
+          background: "var(--color-blue-dim)",
+          border: "1px solid var(--color-blue-border)",
+          borderLeft: "3px solid var(--color-blue)",
           borderRadius: 14,
           margin: "3px 12px",
           padding: "10px 12px",
@@ -676,13 +676,13 @@ function MessageRow({
       id={`msg-${msg.id}`}
       className={cn(
         "group relative flex gap-[11px]",
-        "hover:bg-[rgba(74,158,255,0.04)] hover:border-[rgba(74,158,255,0.15)]",
+        "hover:bg-bg-subtle",
         isOwn && "flex-row",
         isHighlighted && "ring-2 ring-inset ring-blue"
       )}
       style={{
-        background: isHighlighted ? "rgba(74,158,255,.08)" : "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255,255,255,0.055)",
+        background: isHighlighted ? "rgba(74,158,255,.08)" : "var(--color-bg-surface)",
+        border: "1px solid var(--color-border)",
         borderRadius: 14,
         margin: "3px 12px",
         padding: "10px 12px",

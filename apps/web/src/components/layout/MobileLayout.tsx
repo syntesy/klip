@@ -152,7 +152,7 @@ function MobileLayoutInner({ communities, children }: MobileLayoutProps) {
 
   return (
     <div
-      style={{ display: "flex", height: "100dvh", overflow: "hidden", background: "#08111f" }}
+      style={{ display: "flex", height: "100dvh", overflow: "hidden", background: "var(--color-bg-page)" }}
     >
       {/* Sidebar — desktop sempre visível, mobile drawer */}
       <Sidebar communities={communities} isOpen={sidebarOpen} onClose={closeSidebar} />

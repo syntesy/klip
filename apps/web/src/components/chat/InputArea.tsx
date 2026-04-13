@@ -498,7 +498,7 @@ export function InputArea({
       display: "inline-flex", alignItems: "center", gap: 6,
       padding: "6px 10px", borderRadius: 8,
       fontSize: 13, fontWeight: 400,
-      color: danger ? "#ef4444" : "rgba(255,255,255,.55)",
+      color: danger ? "#ef4444" : "var(--color-text-3)",
       background: "transparent", border: "none",
       cursor: "pointer", whiteSpace: "nowrap",
       transition: "color .2s, background .2s",
@@ -506,14 +506,14 @@ export function InputArea({
     };
   }
   function sep(): React.CSSProperties {
-    return { width: 1, height: 16, background: "rgba(255,255,255,.1)", margin: "0 6px", flexShrink: 0, display: "inline-block" };
+    return { width: 1, height: 16, background: "var(--color-border)", margin: "0 6px", flexShrink: 0, display: "inline-block" };
   }
   function applyHover(e: React.MouseEvent<HTMLButtonElement>, danger: boolean) {
-    e.currentTarget.style.color = danger ? "#ef4444" : "rgba(255,255,255,.85)";
-    e.currentTarget.style.background = danger ? "rgba(239,68,68,.08)" : "rgba(255,255,255,.06)";
+    e.currentTarget.style.color = danger ? "#ef4444" : "var(--color-text-1)";
+    e.currentTarget.style.background = danger ? "rgba(239,68,68,.08)" : "var(--color-bg-subtle)";
   }
   function removeHover(e: React.MouseEvent<HTMLButtonElement>, danger = false) {
-    e.currentTarget.style.color = danger ? "#ef4444" : "rgba(255,255,255,.55)";
+    e.currentTarget.style.color = danger ? "#ef4444" : "var(--color-text-3)";
     e.currentTarget.style.background = "transparent";
   }
 
