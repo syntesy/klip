@@ -21,6 +21,7 @@ export interface InputAreaProps {
   communityId?: string;
   onSendMessage: (content: string, attachments: Attachment[], replyTo?: ReplyTarget) => Promise<void>;
   onMarkDecision: () => void;
+  decisionMode?: boolean;
   onRequestSummary: () => void;
   onKlipCommand?: (payload: { command: string; isPrivate: boolean }) => Promise<void>;
   onTyping?: () => void;
@@ -191,6 +192,7 @@ export function InputArea({
   communityId,
   onSendMessage,
   onMarkDecision,
+  decisionMode = false,
   onRequestSummary,
   onKlipCommand,
   onTyping,
@@ -550,6 +552,36 @@ export function InputArea({
         </div>
       )}
 
+      {/* ── Decision mode banner ─────────────────────────────────────── */}
+      {decisionMode && (
+        <div
+          className="flex items-center gap-[6px] px-[10px] py-[4px] rounded-[8px] text-[11px] font-semibold"
+          style={{
+            color: "#F5A94A",
+            background: "rgba(245,169,74,.08)",
+            border: "1px solid rgba(245,169,74,.22)",
+            marginBottom: 2,
+          }}
+        >
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <path d="M3 3C3 2.45 3.45 2 4 2H10L13 5V14C13 14.55 12.55 15 12 15H4C3.45 15 3 14.55 3 14V3Z" />
+            <path d="M10 2V5H13" />
+            <path d="M5.5 8.5H10.5" />
+            <path d="M5.5 11H10.5" />
+          </svg>
+          <span className="flex-1">Modo decisão ativo — a próxima mensagem será marcada como decisão</span>
+          <button
+            type="button"
+            onClick={onMarkDecision}
+            aria-label="Cancelar modo decisão"
+            className="shrink-0 hover:opacity-60 transition-opacity"
+            style={{ fontSize: 14, lineHeight: 1, color: "#F5A94A" }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* ── Context pill ─────────────────────────────────────────────── */}
       <div className="flex items-center gap-[6px]">
         {replyTo ? (
@@ -715,12 +747,23 @@ export function InputArea({
           type="button"
           onClick={onMarkDecision}
           disabled={disabled}
-          aria-label="Marcar como decisão"
-          style={actionBtn()}
-          onMouseEnter={e => applyHover(e, false)}
-          onMouseLeave={e => removeHover(e)}
+          aria-label={decisionMode ? "Cancelar modo decisão" : "Marcar próxima mensagem como decisão"}
+          style={{
+            ...actionBtn(),
+            ...(decisionMode ? {
+              color: "#F5A94A",
+              background: "rgba(245,169,74,.10)",
+              fontWeight: 600,
+            } : {}),
+          }}
+          onMouseEnter={e => {
+            if (!decisionMode) applyHover(e, false);
+          }}
+          onMouseLeave={e => {
+            if (!decisionMode) removeHover(e);
+          }}
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ opacity: .7, flexShrink: 0 }} aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ opacity: decisionMode ? 1 : .7, flexShrink: 0 }} aria-hidden="true">
             <path d="M3 3C3 2.45 3.45 2 4 2H10L13 5V14C13 14.55 12.55 15 12 15H4C3.45 15 3 14.55 3 14V3Z" />
             <path d="M10 2V5H13" strokeLinecap="round" />
             <path d="M5.5 8.5H10.5" strokeLinecap="round" />

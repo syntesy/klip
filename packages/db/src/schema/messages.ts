@@ -44,6 +44,8 @@ export const messages = pgTable(
       .defaultNow(),
     /** Soft delete — preserva contexto de threads mesmo após remoção */
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    /** Marcado como decisão do grupo */
+    isDecision: boolean("is_decision").notNull().default(false),
     /** Reply threading */
     replyToId: uuid("reply_to_id"),
     replyToAuthorName: varchar("reply_to_author_name", { length: 255 }),

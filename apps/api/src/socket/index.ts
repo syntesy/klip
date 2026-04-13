@@ -16,6 +16,7 @@ export interface MessageWithAuthor {
   content: string;
   isEdited: boolean;
   isKlipped: boolean;
+  isDecision: boolean;
   attachments: Attachment[];
   createdAt: Date;
   updatedAt: Date;
@@ -49,6 +50,7 @@ export interface ClientToServerEvents {
     replyToId?: string;
     replyToAuthorName?: string;
     replyToContent?: string;
+    isDecision?: boolean;
   }) => void;
   "typing:start": (topicId: string) => void;
   "typing:stop": (topicId: string) => void;
@@ -205,7 +207,7 @@ export function registerSocketHandlers(io: KlipServer): void {
 
     // ── Send message ────────────────────────────────────────────────────────
 
-    socket.on("message:send", async ({ topicId, content, tempId, attachments, replyToId, replyToAuthorName, replyToContent }) => {
+    socket.on("message:send", async ({ topicId, content, tempId, attachments, replyToId, replyToAuthorName, replyToContent, isDecision }) => {
       if (!content?.trim() && (!attachments || attachments.length === 0)) return;
       if (!topicId) return;
       if (content && content.length > 4000) {
@@ -244,6 +246,7 @@ export function registerSocketHandlers(io: KlipServer): void {
               authorId: userId,
               content: content.trim(),
               attachments: attachments ?? [],
+              isDecision: isDecision === true,
               ...(replyToId ? { replyToId, replyToAuthorName, replyToContent } : {}),
             })
             .returning();
@@ -272,6 +275,7 @@ export function registerSocketHandlers(io: KlipServer): void {
           content: msg.content,
           isEdited: msg.isEdited,
           isKlipped: false,
+          isDecision: msg.isDecision,
           attachments: (msg.attachments as Attachment[]) ?? [],
           createdAt: msg.createdAt,
           updatedAt: msg.updatedAt,

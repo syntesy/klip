@@ -21,6 +21,7 @@ export interface MessageWithAuthor {
   content: string;
   isEdited: boolean;
   isKlipped: boolean;
+  isDecision: boolean;
   attachments: Attachment[];
   createdAt: Date;
   updatedAt: Date;
@@ -56,6 +57,7 @@ interface ClientToServerEvents {
     replyToId?: string;
     replyToAuthorName?: string;
     replyToContent?: string;
+    isDecision?: boolean;
   }) => void;
   "typing:start": (topicId: string) => void;
   "typing:stop": (topicId: string) => void;
@@ -180,7 +182,8 @@ export function useTopicSocket({
     (
       content: string,
       attachments?: Attachment[],
-      replyTo?: { replyToId: string; replyToAuthorName: string; replyToContent: string }
+      replyTo?: { replyToId: string; replyToAuthorName: string; replyToContent: string },
+      isDecision?: boolean
     ): string => {
       const tempId = `optimistic-${Date.now()}-${Math.random()}`;
       socketRef.current?.emit("message:send", {
@@ -189,6 +192,7 @@ export function useTopicSocket({
         tempId,
         ...(attachments && attachments.length > 0 ? { attachments } : {}),
         ...(replyTo ?? {}),
+        ...(isDecision ? { isDecision: true } : {}),
       });
       return tempId;
     },

@@ -45,6 +45,7 @@ function toFeedMessage(m: MessageWithAuthor): Message {
     content: m.content,
     isEdited: m.isEdited,
     isKlipped: m.isKlipped,
+    isDecision: m.isDecision,
     attachments: m.attachments,
     createdAt: m.createdAt,
     updatedAt: m.updatedAt,
@@ -88,6 +89,7 @@ function TopicChatAreaInner({
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
   const [klipThinking, setKlipThinking] = useState(false);
   const [privateKlipResponse, setPrivateKlipResponse] = useState<string | null>(null);
+  const [decisionMode, setDecisionMode] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -205,7 +207,8 @@ function TopicChatAreaInner({
         ? { replyToId: reply.messageId, replyToAuthorName: reply.authorName, replyToContent: reply.content.slice(0, 200) }
         : undefined;
 
-      const tempId = sendMessage(content, attachments, replyPayload);
+      const isDecision = decisionMode;
+      const tempId = sendMessage(content, attachments, replyPayload, isDecision);
 
       const optimistic: Message = {
         id: tempId,
@@ -214,6 +217,7 @@ function TopicChatAreaInner({
         content,
         isEdited: false,
         isKlipped: false,
+        isDecision,
         attachments,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -226,8 +230,9 @@ function TopicChatAreaInner({
         } : {}),
       };
       setMessages((prev) => [...prev, optimistic]);
+      if (isDecision) setDecisionMode(false);
     },
-    [topicId, userId, userName, sendMessage]
+    [topicId, userId, userName, sendMessage, decisionMode]
   );
 
   const handleTyping = useCallback(() => {
@@ -263,7 +268,7 @@ function TopicChatAreaInner({
   );
 
   const handleMarkDecision = useCallback(() => {
-    // TODO: decisões — fase 4
+    setDecisionMode((prev) => !prev);
   }, []);
 
   const handleRequestSummary = useCallback(async () => {
@@ -382,6 +387,7 @@ function TopicChatAreaInner({
         {...(communityId ? { communityId } : {})}
         onSendMessage={handleSendMessage}
         onMarkDecision={handleMarkDecision}
+        decisionMode={decisionMode}
         onRequestSummary={handleRequestSummary}
         onKlipCommand={handleKlipCommand}
         onTyping={handleTyping}
