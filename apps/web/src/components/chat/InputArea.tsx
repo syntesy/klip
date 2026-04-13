@@ -638,7 +638,7 @@ export function InputArea({
       <div
         role="toolbar"
         aria-label="Ferramentas da mensagem"
-        style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", paddingTop: 8 }}
+        style={{ display: "flex", alignItems: "flex-start", gap: 10, paddingTop: 8 }}
       >
         {/* Imagem */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
@@ -747,8 +747,8 @@ export function InputArea({
           </div>
         )}
 
-        {/* @klip · IA */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+        {/* @klip · IA — empurrado para a direita */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginLeft: "auto" }}>
           <button
             type="button"
             onClick={onRequestSummary}
@@ -759,12 +759,13 @@ export function InputArea({
               background: "#091e2e",
               border: "1px solid #4A9EFF",
               display: "flex", alignItems: "center",
-              padding: "0 10px", gap: 2,
+              padding: "0 12px", gap: 3,
               cursor: "pointer", flexShrink: 0,
+              whiteSpace: "nowrap",
             }}
           >
-            <span style={{ fontSize: 10, fontWeight: 800, color: "#4A9EFF", lineHeight: 1 }}>@klip</span>
-            <span style={{ fontSize: 9, fontWeight: 700, color: "#ffffff", lineHeight: 1 }}>&nbsp;· IA</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: "#4A9EFF", lineHeight: 1 }}>@klip</span>
+            <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.7)", lineHeight: 1 }}>· IA</span>
           </button>
           <span style={{ fontSize: 9, color: "#4A9EFF", fontWeight: 700, lineHeight: 1 }}>resumir</span>
         </div>
