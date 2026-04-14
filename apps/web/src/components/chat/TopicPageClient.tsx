@@ -379,18 +379,21 @@ export function TopicPageClient({
         setPurchasingAlbumId(null);
         return;
       }
-      const data = await res.json() as { photos: AlbumPhoto[] };
+      // Mark as purchased — viewer opens via album:purchased WebSocket event.
+      // If already owned (alreadyOwned: true), fetch photos directly.
+      const data = await res.json() as { success: boolean; alreadyOwned?: boolean };
       setAlbums((prev) =>
         prev.map((a) => a.id === albumId ? { ...a, hasPurchased: true } : a)
       );
-      const album = albums.find((a) => a.id === albumId);
-      if (album) {
-        setViewerAlbum({ title: album.title, photos: data.photos });
+      if (data.alreadyOwned) {
+        // WebSocket won't fire for idempotent purchase — open album via HTTP instead
+        void handleOpenAlbum(albumId);
       }
+      // Normal case: viewer opens via album:purchased socket event
     } catch { /* non-fatal */ } finally {
       setPurchasingAlbumId(null);
     }
-  }, [purchasingAlbumId, getToken, albums]);
+  }, [purchasingAlbumId, getToken, handleOpenAlbum]);
 
   // Voice state
   const [showVoiceConfirm, setShowVoiceConfirm] = useState(false);
