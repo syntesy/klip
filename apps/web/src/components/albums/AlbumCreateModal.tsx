@@ -38,7 +38,8 @@ export function AlbumCreateModal({
   const [step, setStep] = useState<"form" | "uploading" | "done">("form");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
 
   const addFiles = useCallback((files: FileList | File[]) => {
@@ -264,17 +265,37 @@ export function AlbumCreateModal({
             {/* Photo dropzone */}
             <div>
               <label style={labelStyle}>Fotos</label>
+              {/* Hidden inputs — câmera e galeria separados (necessário para iOS) */}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                capture="environment"
+                style={{ display: "none" }}
+                onChange={(e) => e.target.files && addFiles(e.target.files)}
+                disabled={step === "uploading"}
+              />
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                style={{ display: "none" }}
+                onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }}
+                disabled={step === "uploading"}
+              />
+
+              {/* Desktop: dropzone drag & drop */}
               <div
                 ref={dropRef}
                 onDragOver={onDragOver}
                 onDragLeave={onDragLeave}
                 onDrop={onDrop}
-                onClick={() => fileInputRef.current?.click()}
                 style={{
                   border: "1.5px dashed rgba(255,255,255,.12)",
-                  borderRadius: 12, padding: "20px",
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-                  cursor: "pointer", transition: "border-color .2s",
+                  borderRadius: 12, padding: "16px 20px",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+                  transition: "border-color .2s",
                   background: "rgba(255,255,255,.02)",
                 }}
               >
@@ -283,19 +304,46 @@ export function AlbumCreateModal({
                   <circle cx="8.5" cy="8.5" r="1.5" />
                   <polyline points="21 15 16 10 5 21" />
                 </svg>
-                <p style={{ fontSize: 12, color: "rgba(255,255,255,.4)", margin: 0 }}>
-                  Arraste fotos ou toque para selecionar
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,.4)", margin: 0, textAlign: "center" }}>
+                  Arraste fotos aqui
                 </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  capture="environment"
-                  style={{ display: "none" }}
-                  onChange={(e) => e.target.files && addFiles(e.target.files)}
-                  disabled={step === "uploading"}
-                />
+
+                {/* Botões câmera + galeria — usados em mobile e desktop */}
+                <div style={{ display: "flex", gap: 8, width: "100%" }}>
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    disabled={step === "uploading"}
+                    style={{
+                      flex: 1, padding: "9px 0", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                      background: "rgba(74,158,255,.10)", border: "1px solid rgba(74,158,255,.25)",
+                      color: "#4A9EFF", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                      <circle cx="12" cy="13" r="4" />
+                    </svg>
+                    Câmera
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    disabled={step === "uploading"}
+                    style={{
+                      flex: 1, padding: "9px 0", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                      background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)",
+                      color: "rgba(255,255,255,.70)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                    Galeria
+                  </button>
+                </div>
               </div>
             </div>
 

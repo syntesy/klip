@@ -46,13 +46,21 @@ export function AlbumViewer({ albumTitle, photos, initialIndex = 0, onClose }: A
     if (!photo || downloading) return;
     setDownloading(true);
     try {
+      // Safari iOS blocks cross-origin <a download> — open in new tab instead
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        window.open(photo.storageUrl, "_blank");
+        return;
+      }
       const response = await fetch(photo.storageUrl);
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `klip-album-${photo.id}.jpg`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
       // non-fatal
@@ -69,6 +77,7 @@ export function AlbumViewer({ albumTitle, photos, initialIndex = 0, onClose }: A
         position: "fixed", inset: 0, zIndex: 9999,
         background: "rgba(0,0,0,.92)",
         display: "flex", flexDirection: "column",
+        height: "100dvh",
       }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
@@ -174,8 +183,12 @@ export function AlbumViewer({ albumTitle, photos, initialIndex = 0, onClose }: A
       </div>
 
       {/* Caption */}
-      {photo.caption && (
-        <div style={{ padding: "10px 18px", flexShrink: 0, borderTop: "1px solid rgba(255,255,255,.08)" }}>
+      {photo.caption && photos.length <= 1 && (
+        <div style={{
+          padding: "10px 18px",
+          paddingBottom: "max(10px, env(safe-area-inset-bottom))",
+          flexShrink: 0, borderTop: "1px solid rgba(255,255,255,.08)",
+        }}>
           <p style={{ fontSize: 13, color: "rgba(255,255,255,.70)", margin: 0 }}>{photo.caption}</p>
         </div>
       )}
@@ -183,7 +196,10 @@ export function AlbumViewer({ albumTitle, photos, initialIndex = 0, onClose }: A
       {/* Thumbnail strip */}
       {photos.length > 1 && (
         <div style={{
-          display: "flex", gap: 6, padding: "10px 18px", overflowX: "auto",
+          display: "flex", gap: 6,
+          padding: "10px 18px",
+          paddingBottom: "max(10px, env(safe-area-inset-bottom))",
+          overflowX: "auto",
           flexShrink: 0, borderTop: "1px solid rgba(255,255,255,.08)",
         }}>
           {photos.map((p, i) => (
