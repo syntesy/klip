@@ -72,6 +72,12 @@ export default function RootLayout({
             __html: `(function(){try{var s=localStorage.getItem('klip-theme');if(s==='light'||s==='dark'){document.documentElement.setAttribute('data-theme',s);return;}if(window.matchMedia('(prefers-color-scheme: light)').matches){document.documentElement.setAttribute('data-theme','light');}else{document.documentElement.setAttribute('data-theme','dark');}}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`,
           }}
         />
+        {/* Plausible — analytics LGPD-friendly, sem cookies */}
+        <script
+          defer
+          data-domain="digitalklip.com"
+          src="https://plausible.io/js/pa-TvK3tEPweTe_pBDglp8HM.js"
+        />
       </head>
       <body className={`${plusJakartaSans.variable} ${dmMono.variable} bg-bg-page text-text-1 antialiased`} style={{ fontFamily: "var(--font-display, 'Plus Jakarta Sans', system-ui, sans-serif)" }}>
         {children}

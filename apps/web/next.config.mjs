@@ -1,3 +1,5 @@
+import { withSentryConfig } from "@sentry/nextjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["@klip/db"],
@@ -27,4 +29,12 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: "syntesy",
+  project: "javascript-nextjs",
+  silent: !process.env.CI, // silencia warnings locais, mostra no CI
+  widenClientFileUpload: true,
+  hideSourceMaps: true,
+  disableLogger: true,
+  automaticVercelMonitors: false,
+});

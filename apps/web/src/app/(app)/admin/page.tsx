@@ -1,0 +1,278 @@
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import {
+  db,
+  communities,
+  communityMembers,
+  topics,
+  messages,
+  photoAlbums,
+  albumPurchases,
+} from "@klip/db";
+import { count, sum, desc, eq, type InferSelectModel } from "drizzle-orm";
+
+type Community = InferSelectModel<typeof communities>;
+type Purchase = InferSelectModel<typeof albumPurchases>;
+
+const ADMIN_USER_ID = process.env.ADMIN_CLERK_USER_ID;
+
+function fmt(date: Date) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function fmtBRL(value: string | null) {
+  const n = parseFloat(value ?? "0");
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(isNaN(n) ? 0 : n);
+}
+
+export default async function AdminPage() {
+  const { userId } = await auth();
+  if (!ADMIN_USER_ID || userId !== ADMIN_USER_ID) redirect("/");
+
+  const [
+    [communitiesRow],
+    [topicsRow],
+    [messagesRow],
+    [membersRow],
+    [albumsRow],
+    [purchasesRow],
+    [revenueRow],
+    recentCommunities,
+    recentPurchases,
+  ] = await Promise.all([
+    db.select({ count: count() }).from(communities),
+    db.select({ count: count() }).from(topics),
+    db.select({ count: count() }).from(messages),
+    db.select({ count: count() }).from(communityMembers),
+    db.select({ count: count() }).from(photoAlbums).where(eq(photoAlbums.status, "published")),
+    db.select({ count: count() }).from(albumPurchases),
+    db.select({ total: sum(albumPurchases.amountPaid) }).from(albumPurchases),
+    db.select().from(communities).orderBy(desc(communities.createdAt)).limit(5),
+    db.select().from(albumPurchases).orderBy(desc(albumPurchases.purchasedAt)).limit(5),
+  ]);
+
+  const today = new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+
+  const card = (label: string, value: string | number) => (
+    <div
+      style={{
+        backgroundColor: "#0f1e35",
+        border: "1px solid #1a2e4a",
+        borderRadius: 14,
+        padding: "20px 24px",
+      }}
+    >
+      <p style={{ color: "#6B8BAF", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
+        {label}
+      </p>
+      <p style={{ color: "#FFFFFF", fontSize: 32, fontWeight: 700, marginTop: 6, marginBottom: 0 }}>
+        {value}
+      </p>
+    </div>
+  );
+
+  const externalLink = (href: string, label: string) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ color: "#4A9EFF", fontSize: 13, textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}
+    >
+      <span style={{ opacity: 0.5 }}>→</span> {label}
+    </a>
+  );
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#0B1628",
+        color: "#FFFFFF",
+        fontFamily: "var(--font-display, Inter, system-ui, sans-serif)",
+        padding: "32px 24px",
+        maxWidth: 900,
+        margin: "0 auto",
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 32 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.5px", margin: 0 }}>
+          <span style={{ color: "#4A9EFF" }}>klip</span>{" "}
+          <span style={{ color: "#6B8BAF", fontWeight: 400 }}>admin</span>
+        </h1>
+        <span style={{ color: "#6B8BAF", fontSize: 13 }}>Hoje · {today}</span>
+      </div>
+
+      {/* STATUS */}
+      <Section label="Status do App">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          <StatusCard
+            label="App online"
+            href="https://digitalklip.com"
+            color="#22C98A"
+            pulse
+          />
+          <StatusCard label="Sentry (erros)" href="https://syntesy.sentry.io" color="#4A9EFF" />
+          <StatusCard label="Better Stack (uptime)" href="https://betterstack.com/team/monitors" color="#4A9EFF" />
+        </div>
+      </Section>
+
+      {/* PRODUTO */}
+      <Section label="Produto">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+          {card("Comunidades", communitiesRow?.count ?? 0)}
+          {card("Tópicos", topicsRow?.count ?? 0)}
+          {card("Mensagens", messagesRow?.count ?? 0)}
+          {card("Membros", membersRow?.count ?? 0)}
+        </div>
+      </Section>
+
+      {/* ÁLBUNS PREMIUM */}
+      <Section label="Álbuns Premium">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          {card("Álbuns publicados", albumsRow?.count ?? 0)}
+          {card("Compras", purchasesRow?.count ?? 0)}
+          {card("Receita total", fmtBRL(revenueRow?.total ?? null))}
+        </div>
+      </Section>
+
+      {/* LINKS RÁPIDOS */}
+      <Section label="Links Rápidos">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+          {externalLink("https://syntesy.sentry.io", "Sentry (erros)")}
+          {externalLink("https://logs.betterstack.com", "Better Stack (logs)")}
+          {externalLink("https://plausible.io/digitalklip.com", "Plausible (tráfego)")}
+          {externalLink("https://supabase.com/dashboard/project/shnitursjfwpmbaihaoy", "Supabase (banco)")}
+          {externalLink("https://railway.app", "Railway (infra)")}
+          {externalLink("https://dashboard.clerk.com", "Clerk (usuários)")}
+        </div>
+      </Section>
+
+      {/* ÚLTIMAS COMUNIDADES */}
+      <Section label="Últimas Comunidades Criadas">
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr style={{ color: "#6B8BAF" }}>
+              <Th>Nome</Th>
+              <Th>Criada em</Th>
+              <Th>Handle</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentCommunities.length === 0 && (
+              <tr><td colSpan={3} style={{ color: "#6B8BAF", padding: "12px 0" }}>Nenhuma comunidade ainda.</td></tr>
+            )}
+            {recentCommunities.map((c: Community) => (
+              <tr key={c.id} style={{ borderTop: "1px solid #1a2e4a" }}>
+                <Td>{c.name}</Td>
+                <Td>{fmt(c.createdAt)}</Td>
+                <Td style={{ color: "#6B8BAF" }}>/{c.slug}</Td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Section>
+
+      {/* ÚLTIMAS COMPRAS */}
+      <Section label="Últimas Compras de Álbum">
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr style={{ color: "#6B8BAF" }}>
+              <Th>User ID</Th>
+              <Th>Álbum ID</Th>
+              <Th>Valor</Th>
+              <Th>Data</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentPurchases.length === 0 && (
+              <tr><td colSpan={4} style={{ color: "#6B8BAF", padding: "12px 0" }}>Nenhuma compra ainda.</td></tr>
+            )}
+            {recentPurchases.map((p: Purchase) => (
+              <tr key={p.id} style={{ borderTop: "1px solid #1a2e4a" }}>
+                <Td style={{ color: "#6B8BAF", fontFamily: "monospace", fontSize: 11 }}>{p.userId.slice(0, 16)}…</Td>
+                <Td style={{ color: "#6B8BAF", fontFamily: "monospace", fontSize: 11 }}>{p.albumId.slice(0, 16)}…</Td>
+                <Td style={{ color: "#22C98A" }}>{fmtBRL(p.amountPaid)}</Td>
+                <Td>{fmt(p.purchasedAt)}</Td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Section>
+    </div>
+  );
+}
+
+// ─── Sub-components ────────────────────────────────────────────────────────────
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <p style={{ color: "#6B8BAF", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12, marginTop: 0 }}>
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+function StatusCard({ label, href, color, pulse }: { label: string; href: string; color: string; pulse?: boolean }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        backgroundColor: "#0f1e35",
+        border: "1px solid #1a2e4a",
+        borderRadius: 14,
+        padding: "16px 20px",
+        textDecoration: "none",
+        color: "#FFFFFF",
+        fontSize: 13,
+        fontWeight: 500,
+      }}
+    >
+      <span style={{ position: "relative", display: "inline-flex", width: 10, height: 10, flexShrink: 0 }}>
+        {pulse && (
+          <span
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "50%",
+              backgroundColor: color,
+              opacity: 0.4,
+              animation: "ping 1.5s cubic-bezier(0,0,.2,1) infinite",
+            }}
+          />
+        )}
+        <span style={{ position: "relative", borderRadius: "50%", width: 10, height: 10, backgroundColor: color, display: "inline-block" }} />
+      </span>
+      {label}
+    </a>
+  );
+}
+
+function Th({ children }: { children: React.ReactNode }) {
+  return <th style={{ textAlign: "left", padding: "8px 0", fontWeight: 500, fontSize: 11 }}>{children}</th>;
+}
+
+function Td({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <td style={{ padding: "10px 0", ...style }}>{children}</td>;
+}

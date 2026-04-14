@@ -1,5 +1,7 @@
+import "./instrument.js"; // Sentry — must be first import
 import "dotenv/config";
-import Fastify from "fastify";
+import * as Sentry from "@sentry/node";
+import Fastify, { type FastifyError } from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import { Server } from "socket.io";
@@ -99,6 +101,16 @@ await fastify.register(albumRoutes, { prefix: "/api" });
 
 // Health check
 fastify.get("/health", async () => ({ status: "ok", timestamp: new Date().toISOString() }));
+
+// Sentry error handler — captures unhandled 5xx before sending response
+fastify.setErrorHandler((error: FastifyError, _request, reply) => {
+  if (!error.statusCode || error.statusCode >= 500) {
+    Sentry.captureException(error);
+  }
+  void reply.status(error.statusCode ?? 500).send({
+    error: error.message || "Internal server error",
+  });
+});
 
 // ── Socket.io ──────────────────────────────────────────────────────────────────
 // Attach after fastify.ready() so fastify.server is a plain HTTP server
