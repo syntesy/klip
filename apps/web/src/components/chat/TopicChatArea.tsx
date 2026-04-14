@@ -50,9 +50,10 @@ function toFeedMessage(m: MessageWithAuthor): Message {
     isKlipped: m.isKlipped,
     isDecision: m.isDecision,
     attachments: m.attachments,
-    createdAt: m.createdAt,
-    updatedAt: m.updatedAt,
-    deletedAt: m.deletedAt,
+    // Socket sends ISO strings — ensure they are Date objects
+    createdAt: m.createdAt instanceof Date ? m.createdAt : new Date(m.createdAt as unknown as string),
+    updatedAt: m.updatedAt instanceof Date ? m.updatedAt : new Date(m.updatedAt as unknown as string),
+    deletedAt: m.deletedAt == null ? null : (m.deletedAt instanceof Date ? m.deletedAt : new Date(m.deletedAt as unknown as string)),
     author: { id: m.authorId, name: m.authorName },
     replyToId: m.replyToId ?? null,
     replyToAuthorName: m.replyToAuthorName ?? null,
