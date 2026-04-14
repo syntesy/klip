@@ -30,6 +30,7 @@ export interface InputAreaProps {
   replyTo?: ReplyTarget | null;
   onCancelReply?: () => void;
   isAdmin?: boolean;
+  onCreateAlbum?: () => void;
 }
 
 /** Pending attachment — has a local preview URL before/instead of the final URL */
@@ -201,6 +202,7 @@ export function InputArea({
   replyTo,
   onCancelReply,
   isAdmin = false,
+  onCreateAlbum,
 }: InputAreaProps) {
   const [content, setContent] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -789,6 +791,26 @@ export function InputArea({
               <rect x="11" y="3" width="3" height="11" rx="0.5" />
             </svg>
             Enquete
+          </button>
+        )}
+
+        {/* Álbum — só admin */}
+        {isAdmin && onCreateAlbum && (
+          <button
+            type="button"
+            onClick={onCreateAlbum}
+            disabled={disabled}
+            aria-label="Criar álbum de fotos"
+            style={actionBtn()}
+            onMouseEnter={e => applyHover(e, false)}
+            onMouseLeave={e => removeHover(e)}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ opacity: .7, flexShrink: 0 }} aria-hidden="true">
+              <rect x="1.5" y="1.5" width="13" height="13" rx="2" />
+              <circle cx="5.5" cy="5.5" r="1.2" fill="currentColor" stroke="none" />
+              <path d="M1.5 10.5L5.5 7L9 10L11 8.5L14.5 11" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Álbum
           </button>
         )}
 

@@ -10,6 +10,9 @@ import { TopicList, type TopicItem } from "@/components/chat/TopicList";
 import { NewTopicModal } from "@/components/communities/NewTopicButton";
 import type { Message } from "@/components/chat/MessageFeed";
 import type { TopicSummary } from "@/hooks/useTopicSocket";
+import { AlbumCreateModal } from "@/components/albums/AlbumCreateModal";
+import { AlbumViewer, type AlbumPhoto } from "@/components/albums/AlbumViewer";
+import type { AlbumCardData } from "@/components/albums/AlbumCard";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -196,6 +199,10 @@ export function TopicPageClient({
   const [newTopicOpen, setNewTopicOpen] = useState(false);
   const [decisionsOpen, setDecisionsOpen] = useState(false);
   const [summary, setSummary] = useState<TopicSummary | null>(initialSummary);
+  const [albums, setAlbums] = useState<AlbumCardData[]>([]);
+  const [albumCreateOpen, setAlbumCreateOpen] = useState(false);
+  const [viewerAlbum, setViewerAlbum] = useState<{ title: string; photos: AlbumPhoto[] } | null>(null);
+  const [purchasingAlbumId, setPurchasingAlbumId] = useState<string | null>(null);
   // Pinned message state — initialized from server data
   const [pinnedMessage, setPinnedMessage] = useState<PinnedMessage | null>(
     topic.pinnedMessageId && topic.pinnedMessageContent && topic.pinnedMessageAuthor
@@ -294,6 +301,97 @@ export function TopicPageClient({
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [pinnedMessage]);
 
+  // ── Album handlers ───────────────────────────────────────────────────────────
+
+  // Fetch albums on mount
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchAlbums() {
+      const token = await getToken();
+      try {
+        const res = await fetch(
+          `${API_URL}/api/communities/${communityId}/albums?topicId=${topicId}`,
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        );
+        if (res.ok && !cancelled) {
+          const data = await res.json() as AlbumCardData[];
+          setAlbums(data);
+        }
+      } catch { /* non-fatal */ }
+    }
+    void fetchAlbums();
+    return () => { cancelled = true; };
+  }, [communityId, topicId, getToken]);
+
+  const handleAlbumPublished = useCallback(
+    (payload: { albumId: string; topicId: string | null | undefined; album: Record<string, unknown> }) => {
+      // Only add albums for this topic (or community-wide albums)
+      const album = payload.album as unknown as AlbumCardData;
+      setAlbums((prev) => {
+        if (prev.some((a) => a.id === album.id)) return prev;
+        return [album, ...prev];
+      });
+    },
+    []
+  );
+
+  const handleAlbumPurchased = useCallback(
+    (payload: { albumId: string; photos: Record<string, unknown>[] }) => {
+      // Mark the album as purchased in the list
+      setAlbums((prev) =>
+        prev.map((a) =>
+          a.id === payload.albumId ? { ...a, hasPurchased: true } : a
+        )
+      );
+      // Open viewer with the now-unlocked photos
+      const album = albums.find((a) => a.id === payload.albumId);
+      if (album) {
+        const photos = payload.photos as unknown as AlbumPhoto[];
+        setViewerAlbum({ title: album.title, photos });
+      }
+      setPurchasingAlbumId(null);
+    },
+    [albums]
+  );
+
+  const handleOpenAlbum = useCallback(async (albumId: string) => {
+    const token = await getToken();
+    try {
+      const res = await fetch(`${API_URL}/api/albums/${albumId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) return;
+      const data = await res.json() as { title: string; photos: AlbumPhoto[] };
+      setViewerAlbum({ title: data.title, photos: data.photos });
+    } catch { /* non-fatal */ }
+  }, [getToken]);
+
+  const handlePurchaseAlbum = useCallback(async (albumId: string) => {
+    if (purchasingAlbumId) return;
+    setPurchasingAlbumId(albumId);
+    const token = await getToken();
+    try {
+      const res = await fetch(`${API_URL}/api/albums/${albumId}/purchase`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        setPurchasingAlbumId(null);
+        return;
+      }
+      const data = await res.json() as { photos: AlbumPhoto[] };
+      setAlbums((prev) =>
+        prev.map((a) => a.id === albumId ? { ...a, hasPurchased: true } : a)
+      );
+      const album = albums.find((a) => a.id === albumId);
+      if (album) {
+        setViewerAlbum({ title: album.title, photos: data.photos });
+      }
+    } catch { /* non-fatal */ } finally {
+      setPurchasingAlbumId(null);
+    }
+  }, [purchasingAlbumId, getToken, albums]);
+
   // Voice state
   const [showVoiceConfirm, setShowVoiceConfirm] = useState(false);
   const [activeVoiceSession, setActiveVoiceSession] = useState(false);
@@ -387,6 +485,9 @@ export function TopicPageClient({
             isAdmin={isAdmin}
             canSave={canSave}
             onPin={(msg) => void handlePin(msg)}
+            onAlbumPublished={handleAlbumPublished}
+            onAlbumPurchased={handleAlbumPurchased}
+            {...(isAdmin ? { onCreateAlbum: () => setAlbumCreateOpen(true) } : {})}
             {...(highlightedMessageId ? { highlightedMessageId } : {})}
           />
         )}
@@ -399,6 +500,12 @@ export function TopicPageClient({
         topics={initialTopics}
         activeTopic={topicId}
         topicSummary={summary}
+        albums={albums}
+        isOwnerOrMod={isAdmin}
+        onOpenAlbum={(id) => void handleOpenAlbum(id)}
+        onPurchaseAlbum={(id) => void handlePurchaseAlbum(id)}
+        onCreateAlbum={() => setAlbumCreateOpen(true)}
+        purchasingAlbumId={purchasingAlbumId}
       />
 
       {/* Modals */}
@@ -412,6 +519,34 @@ export function TopicPageClient({
         <DecisionsModal
           summary={summary}
           onClose={() => setDecisionsOpen(false)}
+        />
+      )}
+      {albumCreateOpen && (
+        <AlbumCreateModal
+          communityId={communityId}
+          topicId={topicId}
+          getToken={getToken}
+          onClose={() => setAlbumCreateOpen(false)}
+          onCreated={(albumId) => {
+            // Refresh albums list after creation
+            void (async () => {
+              const token = await getToken();
+              try {
+                const res = await fetch(`${API_URL}/api/communities/${communityId}/albums?topicId=${topicId}`, {
+                  headers: token ? { Authorization: `Bearer ${token}` } : {},
+                });
+                if (res.ok) setAlbums(await res.json() as AlbumCardData[]);
+              } catch { /* non-fatal */ }
+              void albumId; // suppress unused warning
+            })();
+          }}
+        />
+      )}
+      {viewerAlbum && (
+        <AlbumViewer
+          albumTitle={viewerAlbum.title}
+          photos={viewerAlbum.photos}
+          onClose={() => setViewerAlbum(null)}
         />
       )}
 

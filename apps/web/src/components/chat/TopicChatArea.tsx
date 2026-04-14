@@ -33,6 +33,9 @@ export interface TopicChatAreaProps {
   canSave?: boolean;
   onPin?: (msg: Message) => void;
   highlightedMessageId?: string | null;
+  onAlbumPublished?: (payload: { albumId: string; topicId: string | null | undefined; album: Record<string, unknown> }) => void;
+  onAlbumPurchased?: (payload: { albumId: string; photos: Record<string, unknown>[] }) => void;
+  onCreateAlbum?: () => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -66,6 +69,7 @@ type TopicChatAreaInnerProps = TopicChatAreaProps & {
 }
 
 
+
 function TopicChatAreaInner({
   topicId,
   topicTitle,
@@ -79,6 +83,9 @@ function TopicChatAreaInner({
   canSave,
   onPin,
   highlightedMessageId,
+  onAlbumPublished,
+  onAlbumPurchased,
+  onCreateAlbum,
   userId,
   userName,
   getToken,
@@ -176,6 +183,8 @@ function TopicChatAreaInner({
     onSummaryUpdated: handleSummaryUpdated,
     onVoiceStarted: handleVoiceStarted,
     onVoiceEnded: handleVoiceEnded,
+    ...(onAlbumPublished ? { onAlbumPublished } : {}),
+    ...(onAlbumPurchased ? { onAlbumPurchased } : {}),
   });
 
   // Propagate connection state to parent — useEffect prevents updating parent during render
@@ -394,6 +403,7 @@ function TopicChatAreaInner({
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
         isAdmin={isAdmin ?? false}
+        {...(onCreateAlbum ? { onCreateAlbum } : {})}
         {...(getToken !== undefined ? { getToken } : {})}
       />
     </div>

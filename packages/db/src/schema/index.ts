@@ -11,3 +11,4 @@ export * from "./message_reactions.js";
 export * from './voice_sessions.js'
 export * from './premiumKlips.js'
 export * from './savedMessages.js'
+export * from './albums.js'
