@@ -499,25 +499,22 @@ export function InputArea({
   // ── Toolbar style helpers ────────────────────────────────────────────────
   function actionBtn(danger = false): React.CSSProperties {
     return {
-      display: "inline-flex", alignItems: "center", gap: 6,
-      padding: "6px 10px", borderRadius: 8,
-      fontSize: 13, fontWeight: 400,
-      color: danger ? "#ef4444" : "var(--color-text-3)",
+      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 3,
+      padding: "4px 0", borderRadius: 6,
+      fontSize: 9, fontWeight: 400,
+      color: danger ? "#ef4444" : "#FFFFFF",
       background: "transparent", border: "none",
       cursor: "pointer", whiteSpace: "nowrap",
       transition: "color .2s, background .2s",
-      flexShrink: 0,
+      flex: "1 1 0", minWidth: 0,
     };
   }
-  function sep(): React.CSSProperties {
-    return { width: 1, height: 16, background: "var(--color-border)", margin: "0 6px", flexShrink: 0, display: "inline-block" };
-  }
   function applyHover(e: React.MouseEvent<HTMLButtonElement>, danger: boolean) {
-    e.currentTarget.style.color = danger ? "#ef4444" : "var(--color-text-1)";
-    e.currentTarget.style.background = danger ? "rgba(239,68,68,.08)" : "var(--color-bg-subtle)";
+    e.currentTarget.style.color = danger ? "#ef4444" : "rgba(255,255,255,.85)";
+    e.currentTarget.style.background = danger ? "rgba(239,68,68,.08)" : "rgba(255,255,255,.06)";
   }
   function removeHover(e: React.MouseEvent<HTMLButtonElement>, danger = false) {
-    e.currentTarget.style.color = danger ? "#ef4444" : "var(--color-text-3)";
+    e.currentTarget.style.color = danger ? "#ef4444" : "#FFFFFF";
     e.currentTarget.style.background = "transparent";
   }
 
@@ -697,9 +694,9 @@ export function InputArea({
       <div
         role="toolbar"
         aria-label="Ferramentas da mensagem"
-        style={{ display: "flex", alignItems: "center", gap: 0, padding: "10px 0 2px", height: 42 }}
+        style={{ display: "flex", alignItems: "center", gap: 0, padding: "8px 0 2px", height: 40, overflow: "hidden" }}
       >
-        {/* Imagem */}
+        {/* Foto */}
         <button
           type="button"
           onClick={handleImageButtonClick}
@@ -709,12 +706,12 @@ export function InputArea({
           onMouseEnter={e => applyHover(e, false)}
           onMouseLeave={e => removeHover(e)}
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ opacity: .7, flexShrink: 0 }} aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ flexShrink: 0 }} aria-hidden="true">
             <rect x="1.5" y="1.5" width="13" height="13" rx="2" />
             <circle cx="5.5" cy="5.5" r="1.5" fill="currentColor" stroke="none" />
             <path d="M14.5 10.5L10.5 6.5L6.5 10.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          Imagem
+          Foto
         </button>
 
         {/* Áudio */}
@@ -728,11 +725,11 @@ export function InputArea({
           onMouseLeave={e => removeHover(e, recording)}
         >
           {recording ? (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style={{ opacity: .85, flexShrink: 0 }} aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" style={{ flexShrink: 0 }} aria-hidden="true">
               <rect x="3" y="3" width="10" height="10" rx="2" />
             </svg>
           ) : (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ opacity: .7, flexShrink: 0 }} aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ flexShrink: 0 }} aria-hidden="true">
               <rect x="5" y="1.5" width="6" height="8" rx="3" />
               <path d="M3 9c0 2.8 2.2 5 5 5s5-2.2 5-5" strokeLinecap="round" />
               <path d="M8 14v1.5" strokeLinecap="round" />
@@ -740,9 +737,6 @@ export function InputArea({
           )}
           {recording ? formatTimer(recordingSeconds) : "Áudio"}
         </button>
-
-        {/* Separador */}
-        <span style={sep()} />
 
         {/* Decisão */}
         <button
@@ -765,7 +759,7 @@ export function InputArea({
             if (!decisionMode) removeHover(e);
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ opacity: decisionMode ? 1 : .7, flexShrink: 0 }} aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ flexShrink: 0 }} aria-hidden="true">
             <path d="M3 3C3 2.45 3.45 2 4 2H10L13 5V14C13 14.55 12.55 15 12 15H4C3.45 15 3 14.55 3 14V3Z" />
             <path d="M10 2V5H13" strokeLinecap="round" />
             <path d="M5.5 8.5H10.5" strokeLinecap="round" />
@@ -785,7 +779,7 @@ export function InputArea({
             onMouseEnter={e => applyHover(e, false)}
             onMouseLeave={e => removeHover(e)}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ opacity: .7, flexShrink: 0 }} aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ flexShrink: 0 }} aria-hidden="true">
               <rect x="2" y="11" width="3" height="3" rx="0.5" />
               <rect x="6.5" y="7" width="3" height="7" rx="0.5" />
               <rect x="11" y="3" width="3" height="11" rx="0.5" />
@@ -805,7 +799,7 @@ export function InputArea({
             onMouseEnter={e => applyHover(e, false)}
             onMouseLeave={e => removeHover(e)}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ opacity: .7, flexShrink: 0 }} aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ flexShrink: 0 }} aria-hidden="true">
               <rect x="1.5" y="1.5" width="13" height="13" rx="2" />
               <circle cx="5.5" cy="5.5" r="1.2" fill="currentColor" stroke="none" />
               <path d="M1.5 10.5L5.5 7L9 10L11 8.5L14.5 11" strokeLinecap="round" strokeLinejoin="round" />
@@ -814,23 +808,20 @@ export function InputArea({
           </button>
         )}
 
-        {/* Separador */}
-        <span style={sep()} />
-
-        {/* @klip resumir */}
+        {/* @klip */}
         <button
           type="button"
           onClick={onRequestSummary}
           disabled={disabled}
           aria-label="@klip — Resumir com IA"
-          style={{ ...actionBtn(), color: "#22C98A", fontWeight: 500 }}
-          onMouseEnter={e => { e.currentTarget.style.background = "rgba(34,201,138,.08)"; e.currentTarget.style.color = "#22C98A"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#22C98A"; }}
+          style={{ ...actionBtn(), color: "#4A9EFF", fontWeight: 500 }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(74,158,255,.08)"; e.currentTarget.style.color = "#4A9EFF"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#4A9EFF"; }}
         >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, opacity: .9 }} aria-hidden="true">
-            <path d="M7 1L8.2 5.1L12.5 7L8.2 8.9L7 13L5.8 8.9L1.5 7L5.8 5.1L7 1Z" stroke="#22C98A" strokeWidth="1.1" strokeLinejoin="round" fill="rgba(34,201,138,.15)" />
+          <svg width="18" height="18" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }} aria-hidden="true">
+            <path d="M7 1L8.2 5.1L12.5 7L8.2 8.9L7 13L5.8 8.9L1.5 7L5.8 5.1L7 1Z" stroke="#4A9EFF" strokeWidth="1.1" strokeLinejoin="round" fill="rgba(74,158,255,.15)" />
           </svg>
-          @klip resumir
+          @klip
         </button>
       </div>
 
