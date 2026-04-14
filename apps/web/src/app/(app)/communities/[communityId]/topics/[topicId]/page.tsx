@@ -1,6 +1,5 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
-import { DeleteTopicButton } from "@/components/communities/DeleteTopicButton";
 import { TopicPageClient } from "@/components/chat/TopicPageClient";
 import type { TopicItem } from "@/components/chat/TopicList";
 import type { Message } from "@/components/chat/MessageFeed";
@@ -103,11 +102,6 @@ export default async function TopicPage({ params }: Props) {
 
   return (
     <div className="flex flex-col h-full">
-      {isAdmin && (
-        <div className="flex justify-end px-4 pt-3 shrink-0">
-          <DeleteTopicButton topicId={topicId} communityId={communityId} topicTitle={topic.title} />
-        </div>
-      )}
       <TopicPageClient
         communityId={communityId}
         topicId={topicId}

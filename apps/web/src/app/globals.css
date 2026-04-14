@@ -552,7 +552,6 @@ nav[aria-label="Navegação principal"] {
 [data-theme="light"] .klip-resumo-label {
   color: #1249A0;
 }
-:root .klip-msg-text,
 [data-theme="light"] .klip-msg-text {
   color: #2C3A4A;
 }
