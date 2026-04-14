@@ -74,14 +74,19 @@ async function getPreviewPhotos(albumId: string, hasPurchased: boolean, limit = 
 }
 
 /** Build the album payload sent over the wire (adding hasPurchased + previewPhotos). */
-async function buildAlbumPayload(album: typeof photoAlbums.$inferSelect, userId: string) {
-  const [purchase] = await db
+async function buildAlbumPayload(
+  album: typeof photoAlbums.$inferSelect,
+  userId: string,
+  isOwnerOrMod = false,
+) {
+  const hasPurchasedByRole = !album.isPremium || isOwnerOrMod;
+  const [purchase] = hasPurchasedByRole ? [{ id: "owner" }] : await db
     .select({ id: albumPurchases.id })
     .from(albumPurchases)
     .where(and(eq(albumPurchases.userId, userId), eq(albumPurchases.albumId, album.id)))
     .limit(1);
 
-  const hasPurchased = !album.isPremium || Boolean(purchase);
+  const hasPurchased = hasPurchasedByRole || Boolean(purchase);
   const previewPhotos = await getPreviewPhotos(album.id, hasPurchased);
 
   return { ...album, hasPurchased, previewPhotos };
@@ -155,6 +160,8 @@ export async function albumRoutes(fastify: FastifyInstance) {
       const member = await assertMember(communityId, req.userId);
       if (!member.ok) return reply.status(member.status).send({ error: "Access denied" });
 
+      const isOwnerOrMod = member.role === "owner" || member.role === "moderator";
+
       const conditions = [
         eq(photoAlbums.communityId, communityId),
         eq(photoAlbums.status, "published"),
@@ -168,19 +175,19 @@ export async function albumRoutes(fastify: FastifyInstance) {
         .orderBy(desc(photoAlbums.publishedAt));
 
       const albumIds = albums.map((a) => a.id);
-      const purchases =
-        albumIds.length > 0
-          ? await db
-              .select({ albumId: albumPurchases.albumId })
-              .from(albumPurchases)
-              .where(and(eq(albumPurchases.userId, req.userId), inArray(albumPurchases.albumId, albumIds)))
-          : [];
+      // Owner/mod sees all albums as purchased; regular members check purchase records
+      const purchases = (isOwnerOrMod || albumIds.length === 0)
+        ? []
+        : await db
+            .select({ albumId: albumPurchases.albumId })
+            .from(albumPurchases)
+            .where(and(eq(albumPurchases.userId, req.userId), inArray(albumPurchases.albumId, albumIds)));
 
       const purchasedSet = new Set(purchases.map((p) => p.albumId));
 
       const results = await Promise.all(
         albums.map(async (album) => {
-          const hasPurchased = !album.isPremium || purchasedSet.has(album.id);
+          const hasPurchased = !album.isPremium || isOwnerOrMod || purchasedSet.has(album.id);
           const previewPhotos = await getPreviewPhotos(album.id, hasPurchased);
           return { ...album, hasPurchased, previewPhotos };
         })
@@ -209,7 +216,10 @@ export async function albumRoutes(fastify: FastifyInstance) {
       const member = await assertMember(album.communityId, req.userId);
       if (!member.ok) return reply.status(member.status).send({ error: "Access denied" });
 
-      const [purchase] = await db
+      // Owner/moderator always has access (no need to purchase their own content)
+      const isOwnerOrMod = member.role === "owner" || member.role === "moderator";
+
+      const [purchase] = isOwnerOrMod ? [{ id: "owner" }] : await db
         .select({ id: albumPurchases.id })
         .from(albumPurchases)
         .where(and(eq(albumPurchases.userId, req.userId), eq(albumPurchases.albumId, albumId)))
@@ -271,7 +281,7 @@ export async function albumRoutes(fastify: FastifyInstance) {
       if (isFirstPublish && updated) {
         try {
           const io = getIo();
-          const payload = await buildAlbumPayload(updated, req.userId);
+          const payload = await buildAlbumPayload(updated, req.userId, auth.ok && (auth.role === "owner" || auth.role === "moderator"));
           io.to(`topic:${album.topicId}`).emit("album:published", {
             albumId: updated.id,
             topicId: album.topicId,
