@@ -24,21 +24,26 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Klip — Sua comunidade, organizada pela IA",
   description: "A comunidade que se organiza sozinha.",
+  manifest: "/manifest.json",
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      { url: "/icons/icon-180.png", sizes: "180x180", type: "image/png" },
+      { url: "/icons/icon-152.png", sizes: "152x152", type: "image/png" },
+      { url: "/icons/icon-167.png", sizes: "167x167", type: "image/png" },
+      { url: "/icons/icon-120.png", sizes: "120x120", type: "image/png" },
     ],
     shortcut: "/favicon-32.png",
   },
   other: {
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "black-translucent",
+    "apple-mobile-web-app-title": "Klip",
   },
 };
 
