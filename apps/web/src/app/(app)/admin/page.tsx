@@ -34,28 +34,37 @@ export default async function AdminPage() {
   type PurchaseRow = { id: string; user_id: string; album_id: string; amount_paid: string; purchased_at: string };
 
   const [
-    communitiesRes, topicsRes, messagesRes, membersRes,
-    albumsRes, purchasesRes, revenueRes,
-    recentCommunities, recentPurchases,
+    communitiesRes, topicsRes, messagesRes, membersRes, recentCommunities,
   ] = await Promise.all([
     sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM communities`,
     sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM topics`,
     sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM messages`,
     sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM community_members`,
-    sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM photo_albums WHERE status = 'published'`,
-    sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM album_purchases`,
-    sql<RevenueRow[]>`SELECT SUM(amount_paid)::text AS total FROM album_purchases`,
     sql<CommunityRow[]>`SELECT id, name, slug, created_at FROM communities ORDER BY created_at DESC LIMIT 5`,
-    sql<PurchaseRow[]>`SELECT id, user_id, album_id, amount_paid::text, purchased_at FROM album_purchases ORDER BY purchased_at DESC LIMIT 5`,
   ]);
+
+  // Album tables may not exist yet in production (pending migration)
+  let totalAlbums = 0, totalPurchases = 0, revenue: string | null = null;
+  let recentPurchases: PurchaseRow[] = [];
+  try {
+    const [albumsRes, purchasesRes, revenueRes, purchasesListRes] = await Promise.all([
+      sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM photo_albums WHERE status = 'published'`,
+      sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM album_purchases`,
+      sql<RevenueRow[]>`SELECT SUM(amount_paid)::text AS total FROM album_purchases`,
+      sql<PurchaseRow[]>`SELECT id, user_id, album_id, amount_paid::text, purchased_at FROM album_purchases ORDER BY purchased_at DESC LIMIT 5`,
+    ]);
+    totalAlbums    = albumsRes[0]?.count ?? 0;
+    totalPurchases = purchasesRes[0]?.count ?? 0;
+    revenue        = revenueRes[0]?.total ?? null;
+    recentPurchases = purchasesListRes;
+  } catch {
+    // Tables don't exist yet — migration pending
+  }
 
   const totalCommunities = communitiesRes[0]?.count ?? 0;
   const totalTopics      = topicsRes[0]?.count ?? 0;
   const totalMessages    = messagesRes[0]?.count ?? 0;
   const totalMembers     = membersRes[0]?.count ?? 0;
-  const totalAlbums      = albumsRes[0]?.count ?? 0;
-  const totalPurchases   = purchasesRes[0]?.count ?? 0;
-  const revenue          = revenueRes[0]?.total ?? null;
 
   await sql.end();
 
