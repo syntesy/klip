@@ -7,7 +7,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { messages } from "./messages.js";
+import { messages } from "./messages";
 
 // ─── Saved Messages (personal library) ────────────────────────────────────────
 // Users manually save messages to their personal library (Pro/Business plan only).

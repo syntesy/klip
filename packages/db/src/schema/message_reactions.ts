@@ -1,5 +1,5 @@
 import { pgTable, uuid, varchar, timestamp, uniqueIndex, index } from "drizzle-orm/pg-core";
-import { messages } from "./messages.js";
+import { messages } from "./messages";
 
 export const messageReactions = pgTable(
   "message_reactions",

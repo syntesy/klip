@@ -9,7 +9,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { topics } from "./topics.js";
+import { topics } from "./topics";
 
 // ─── Enum ───────────────────────────────────────────────────────────────────
 export const memberRoleEnum = pgEnum("member_role", [

@@ -1,6 +1,6 @@
 import { pgTable, uuid, varchar, integer, timestamp, pgEnum, index } from 'drizzle-orm/pg-core'
-import { topics } from './topics.js'
-import { communities } from './communities.js'
+import { topics } from './topics'
+import { communities } from './communities'
 
 export const voiceSessionStatusEnum = pgEnum('voice_session_status', ['active', 'ended'])
 

@@ -35,4 +35,4 @@ ENV NODE_ENV=production
 
 EXPOSE 3000
 
-CMD ["pnpm", "--filter", "@klip/web", "start"]
+CMD ["sh", "-c", "pnpm --filter @klip/web exec next start -p ${PORT:-3000}"]

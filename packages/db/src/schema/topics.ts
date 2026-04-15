@@ -10,8 +10,8 @@ import {
   pgEnum,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { communities } from "./communities.js";
-import { aiSummaries } from "./ai.js";
+import { communities } from "./communities";
+import { aiSummaries } from "./ai";
 
 // ─── Enum ─────────────────────────────────────────────────────────────────────
 export const topicStatusEnum = pgEnum("topic_status", [

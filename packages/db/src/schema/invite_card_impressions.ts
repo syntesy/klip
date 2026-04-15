@@ -8,7 +8,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { extractedContents } from "./extracted_contents.js";
+import { extractedContents } from "./extracted_contents";
 
 // ─── Enum ────────────────────────────────────────────────────────────────────
 

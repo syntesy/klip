@@ -1,29 +1,17 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import {
-  db,
-  communities,
-  communityMembers,
-  topics,
-  messages,
-  photoAlbums,
-  albumPurchases,
-} from "@klip/db";
-import { count, sum, desc, eq, type InferSelectModel } from "drizzle-orm";
-
-type Community = InferSelectModel<typeof communities>;
-type Purchase = InferSelectModel<typeof albumPurchases>;
+import postgres from "postgres";
 
 const ADMIN_USER_ID = process.env.ADMIN_CLERK_USER_ID;
 
-function fmt(date: Date) {
+function fmt(date: Date | string) {
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(date);
+  }).format(new Date(date));
 }
 
 function fmtBRL(value: string | null) {
@@ -38,27 +26,38 @@ export default async function AdminPage() {
   const { userId } = await auth();
   if (!ADMIN_USER_ID || userId !== ADMIN_USER_ID) redirect("/");
 
+  const sql = postgres(process.env.DATABASE_URL!);
+
+  type CountRow = { count: number };
+  type RevenueRow = { total: string | null };
+  type CommunityRow = { id: string; name: string; slug: string; created_at: string };
+  type PurchaseRow = { id: string; user_id: string; album_id: string; amount_paid: string; purchased_at: string };
+
   const [
-    [communitiesRow],
-    [topicsRow],
-    [messagesRow],
-    [membersRow],
-    [albumsRow],
-    [purchasesRow],
-    [revenueRow],
-    recentCommunities,
-    recentPurchases,
+    communitiesRes, topicsRes, messagesRes, membersRes,
+    albumsRes, purchasesRes, revenueRes,
+    recentCommunities, recentPurchases,
   ] = await Promise.all([
-    db.select({ count: count() }).from(communities),
-    db.select({ count: count() }).from(topics),
-    db.select({ count: count() }).from(messages),
-    db.select({ count: count() }).from(communityMembers),
-    db.select({ count: count() }).from(photoAlbums).where(eq(photoAlbums.status, "published")),
-    db.select({ count: count() }).from(albumPurchases),
-    db.select({ total: sum(albumPurchases.amountPaid) }).from(albumPurchases),
-    db.select().from(communities).orderBy(desc(communities.createdAt)).limit(5),
-    db.select().from(albumPurchases).orderBy(desc(albumPurchases.purchasedAt)).limit(5),
+    sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM communities`,
+    sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM topics`,
+    sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM messages`,
+    sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM community_members`,
+    sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM photo_albums WHERE status = 'published'`,
+    sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM album_purchases`,
+    sql<RevenueRow[]>`SELECT SUM(amount_paid)::text AS total FROM album_purchases`,
+    sql<CommunityRow[]>`SELECT id, name, slug, created_at FROM communities ORDER BY created_at DESC LIMIT 5`,
+    sql<PurchaseRow[]>`SELECT id, user_id, album_id, amount_paid::text, purchased_at FROM album_purchases ORDER BY purchased_at DESC LIMIT 5`,
   ]);
+
+  const totalCommunities = communitiesRes[0]?.count ?? 0;
+  const totalTopics      = topicsRes[0]?.count ?? 0;
+  const totalMessages    = messagesRes[0]?.count ?? 0;
+  const totalMembers     = membersRes[0]?.count ?? 0;
+  const totalAlbums      = albumsRes[0]?.count ?? 0;
+  const totalPurchases   = purchasesRes[0]?.count ?? 0;
+  const revenue          = revenueRes[0]?.total ?? null;
+
+  await sql.end();
 
   const today = new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
@@ -119,12 +118,7 @@ export default async function AdminPage() {
       {/* STATUS */}
       <Section label="Status do App">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-          <StatusCard
-            label="App online"
-            href="https://digitalklip.com"
-            color="#22C98A"
-            pulse
-          />
+          <StatusCard label="App online" href="https://digitalklip.com" color="#22C98A" pulse />
           <StatusCard label="Sentry (erros)" href="https://syntesy.sentry.io" color="#4A9EFF" />
           <StatusCard label="Better Stack (uptime)" href="https://betterstack.com/team/monitors" color="#4A9EFF" />
         </div>
@@ -133,19 +127,19 @@ export default async function AdminPage() {
       {/* PRODUTO */}
       <Section label="Produto">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-          {card("Comunidades", communitiesRow?.count ?? 0)}
-          {card("Tópicos", topicsRow?.count ?? 0)}
-          {card("Mensagens", messagesRow?.count ?? 0)}
-          {card("Membros", membersRow?.count ?? 0)}
+          {card("Comunidades", totalCommunities ?? 0)}
+          {card("Tópicos", totalTopics ?? 0)}
+          {card("Mensagens", totalMessages ?? 0)}
+          {card("Membros", totalMembers ?? 0)}
         </div>
       </Section>
 
       {/* ÁLBUNS PREMIUM */}
       <Section label="Álbuns Premium">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-          {card("Álbuns publicados", albumsRow?.count ?? 0)}
-          {card("Compras", purchasesRow?.count ?? 0)}
-          {card("Receita total", fmtBRL(revenueRow?.total ?? null))}
+          {card("Álbuns publicados", totalAlbums ?? 0)}
+          {card("Compras", totalPurchases ?? 0)}
+          {card("Receita total", fmtBRL(revenue ?? null))}
         </div>
       </Section>
 
@@ -175,10 +169,10 @@ export default async function AdminPage() {
             {recentCommunities.length === 0 && (
               <tr><td colSpan={3} style={{ color: "#6B8BAF", padding: "12px 0" }}>Nenhuma comunidade ainda.</td></tr>
             )}
-            {recentCommunities.map((c: Community) => (
+            {recentCommunities.map((c: CommunityRow) => (
               <tr key={c.id} style={{ borderTop: "1px solid #1a2e4a" }}>
                 <Td>{c.name}</Td>
-                <Td>{fmt(c.createdAt)}</Td>
+                <Td>{fmt(c.created_at)}</Td>
                 <Td style={{ color: "#6B8BAF" }}>/{c.slug}</Td>
               </tr>
             ))}
@@ -201,12 +195,12 @@ export default async function AdminPage() {
             {recentPurchases.length === 0 && (
               <tr><td colSpan={4} style={{ color: "#6B8BAF", padding: "12px 0" }}>Nenhuma compra ainda.</td></tr>
             )}
-            {recentPurchases.map((p: Purchase) => (
+            {recentPurchases.map((p: PurchaseRow) => (
               <tr key={p.id} style={{ borderTop: "1px solid #1a2e4a" }}>
-                <Td style={{ color: "#6B8BAF", fontFamily: "monospace", fontSize: 11 }}>{p.userId.slice(0, 16)}…</Td>
-                <Td style={{ color: "#6B8BAF", fontFamily: "monospace", fontSize: 11 }}>{p.albumId.slice(0, 16)}…</Td>
-                <Td style={{ color: "#22C98A" }}>{fmtBRL(p.amountPaid)}</Td>
-                <Td>{fmt(p.purchasedAt)}</Td>
+                <Td style={{ color: "#6B8BAF", fontFamily: "monospace", fontSize: 11 }}>{p.user_id.slice(0, 16)}…</Td>
+                <Td style={{ color: "#6B8BAF", fontFamily: "monospace", fontSize: 11 }}>{p.album_id.slice(0, 16)}…</Td>
+                <Td style={{ color: "#22C98A" }}>{fmtBRL(p.amount_paid)}</Td>
+                <Td>{fmt(p.purchased_at)}</Td>
               </tr>
             ))}
           </tbody>

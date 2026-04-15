@@ -9,8 +9,8 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { communities } from "./communities.js";
-import { topics } from "./topics.js";
+import { communities } from "./communities";
+import { topics } from "./topics";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 

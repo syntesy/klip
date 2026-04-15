@@ -8,7 +8,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { messages } from "./messages.js";
+import { messages } from "./messages";
 
 // ─── Klips (personal library) ─────────────────────────────────────────────────
 export const klips = pgTable(

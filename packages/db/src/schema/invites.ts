@@ -8,7 +8,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { communities } from "./communities.js";
+import { communities } from "./communities";
 
 // ─── Invites ─────────────────────────────────────────────────────────────────
 export const invites = pgTable(
