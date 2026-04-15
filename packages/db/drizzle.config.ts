@@ -8,5 +8,5 @@ export default {
     url: process.env.DATABASE_URL ?? "postgresql://postgres:password@localhost:5432/klip",
   },
   verbose: true,
-  strict: true,
+  strict: false,
 } satisfies Config;
