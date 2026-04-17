@@ -196,40 +196,42 @@ export async function premiumRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ error: "Not a member of this community" });
       }
 
-      // Check if already purchased (idempotent)
-      const [existing] = await db
-        .select({ id: premiumPurchases.id })
-        .from(premiumPurchases)
-        .where(
-          and(
-            eq(premiumPurchases.userId, req.userId),
-            eq(premiumPurchases.premiumKlipId, premiumKlipId)
+      // Atomic check-and-purchase in a transaction to prevent race conditions
+      const result = await db.transaction(async (tx) => {
+        const [existing] = await tx
+          .select({ id: premiumPurchases.id })
+          .from(premiumPurchases)
+          .where(
+            and(
+              eq(premiumPurchases.userId, req.userId),
+              eq(premiumPurchases.premiumKlipId, premiumKlipId)
+            )
           )
-        )
-        .limit(1);
+          .limit(1)
+          .for("update");
 
-      if (existing) {
-        return { success: true, accessGranted: true, alreadyOwned: true };
-      }
+        if (existing) {
+          return { success: true, accessGranted: true, alreadyOwned: true } as const;
+        }
 
-      // Simulate payment & record
-      await db
-        .insert(premiumPurchases)
-        .values({
-          userId: req.userId,
-          premiumKlipId,
-          amountPaid: klip.price,
-          stripePaymentId: "sim_test",
-        })
-        .onConflictDoNothing();
+        await tx
+          .insert(premiumPurchases)
+          .values({
+            userId: req.userId,
+            premiumKlipId,
+            amountPaid: klip.price,
+            stripePaymentId: "sim_test",
+          });
 
-      // Increment purchase_count
-      await db
-        .update(premiumKlips)
-        .set({ purchaseCount: sql`${premiumKlips.purchaseCount} + 1` })
-        .where(eq(premiumKlips.id, premiumKlipId));
+        await tx
+          .update(premiumKlips)
+          .set({ purchaseCount: sql`${premiumKlips.purchaseCount} + 1` })
+          .where(eq(premiumKlips.id, premiumKlipId));
 
-      return { success: true, accessGranted: true };
+        return { success: true, accessGranted: true } as const;
+      });
+
+      return result;
     }
   );
 

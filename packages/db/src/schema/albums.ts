@@ -77,7 +77,7 @@ export const albumPurchases = pgTable(
   {
     id:              uuid("id").primaryKey().defaultRandom(),
     userId:          text("user_id").notNull(),
-    albumId:         uuid("album_id").notNull().references(() => photoAlbums.id),
+    albumId:         uuid("album_id").notNull().references(() => photoAlbums.id, { onDelete: "cascade" }),
     amountPaid:      decimal("amount_paid", { precision: 10, scale: 2 }).notNull(),
     stripePaymentId: text("stripe_payment_id"),
     purchasedAt:     timestamp("purchased_at", { withTimezone: true }).notNull().defaultNow(),

@@ -424,32 +424,39 @@ export async function albumRoutes(fastify: FastifyInstance) {
       const member = await assertMember(album.communityId, req.userId);
       if (!member.ok) return reply.status(member.status).send({ error: "Not a member" });
 
-      // Idempotent — already purchased
-      const [existing] = await db
-        .select({ id: albumPurchases.id })
-        .from(albumPurchases)
-        .where(and(eq(albumPurchases.userId, req.userId), eq(albumPurchases.albumId, albumId)))
-        .limit(1);
+      // Atomic check-and-purchase in a transaction to prevent race conditions
+      const purchaseResult = await db.transaction(async (tx) => {
+        const [existing] = await tx
+          .select({ id: albumPurchases.id })
+          .from(albumPurchases)
+          .where(and(eq(albumPurchases.userId, req.userId), eq(albumPurchases.albumId, albumId)))
+          .limit(1)
+          .for("update");
 
-      if (existing) {
+        if (existing) {
+          return { alreadyOwned: true } as const;
+        }
+
+        await tx
+          .insert(albumPurchases)
+          .values({
+            userId: req.userId,
+            albumId,
+            amountPaid: album.price ?? "0",
+            stripePaymentId: "sim_test",
+          });
+
+        await tx
+          .update(photoAlbums)
+          .set({ purchaseCount: sql`${photoAlbums.purchaseCount} + 1` })
+          .where(eq(photoAlbums.id, albumId));
+
+        return { alreadyOwned: false } as const;
+      });
+
+      if (purchaseResult.alreadyOwned) {
         return { success: true, accessGranted: true, alreadyOwned: true };
       }
-
-      // Simulated payment — real Stripe: create PaymentIntent, return clientSecret
-      await db
-        .insert(albumPurchases)
-        .values({
-          userId: req.userId,
-          albumId,
-          amountPaid: album.price ?? "0",
-          stripePaymentId: "sim_test",
-        })
-        .onConflictDoNothing();
-
-      await db
-        .update(photoAlbums)
-        .set({ purchaseCount: sql`${photoAlbums.purchaseCount} + 1` })
-        .where(eq(photoAlbums.id, albumId));
 
       // Fetch full photos for this user and notify via WebSocket
       try {

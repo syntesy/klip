@@ -36,7 +36,7 @@ async function assertMessageMembership(
         eq(communityMembers.userId, userId)
       )
     )
-    .where(eq(messages.id, messageId))
+    .where(and(eq(messages.id, messageId), isNull(messages.deletedAt)))
     .limit(1);
 
   if (!row) return { ok: false, status: 404 };

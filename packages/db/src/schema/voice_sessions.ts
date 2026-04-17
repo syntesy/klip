@@ -6,8 +6,8 @@ export const voiceSessionStatusEnum = pgEnum('voice_session_status', ['active', 
 
 export const voiceSessions = pgTable('voice_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
-  topicId: uuid('topic_id').notNull().references(() => topics.id),
-  communityId: uuid('community_id').notNull().references(() => communities.id),
+  topicId: uuid('topic_id').notNull().references(() => topics.id, { onDelete: 'cascade' }),
+  communityId: uuid('community_id').notNull().references(() => communities.id, { onDelete: 'cascade' }),
   hostClerkId: varchar('host_clerk_id', { length: 255 }).notNull(),
   livekitRoomName: varchar('livekit_room_name').notNull(),
   status: voiceSessionStatusEnum('status').default('active').notNull(),
