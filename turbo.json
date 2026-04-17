@@ -9,7 +9,13 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "NODE_ENV",
+        "DATABASE_URL",
+        "CLERK_SECRET_KEY",
+        "ADMIN_CLERK_USER_ID"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]
