@@ -221,7 +221,7 @@ function StatsGrid({ stats }: { stats: NonNullable<TopicListProps["stats"]> }) {
       {items.map(({ val, label }) => (
         <div
           key={label}
-          className="rounded-[10px] px-[14px] py-[12px] border transition-all hover:shadow-[0_2px_6px_rgba(0,0,0,.05)]"
+          className="rounded-[10px] px-[12px] py-[8px] border transition-all hover:shadow-[0_2px_6px_rgba(0,0,0,.05)]"
           style={{
             background: "var(--color-bg-surface)",
             border: "1px solid var(--color-border)",
@@ -231,7 +231,7 @@ function StatsGrid({ stats }: { stats: NonNullable<TopicListProps["stats"]> }) {
         >
           <p
             className="font-bold text-text-1"
-            style={{ fontSize: 24, fontFamily: "var(--font-mono, monospace)", letterSpacing: "-0.5px" }}
+            style={{ fontSize: 16, fontFamily: "var(--font-mono, monospace)", letterSpacing: "-0.3px" }}
           >
             {val}
           </p>
@@ -298,16 +298,17 @@ export function TopicList({
             className={cn(
               "flex-1 py-[15px] text-[11px] font-medium text-center transition-colors border-b-[2px] -mb-px",
               activeTab === tab
-                ? "text-blue border-blue font-bold"
+                ? "font-bold"
                 : "text-text-3 border-transparent hover:text-text-2"
             )}
+            style={activeTab === tab ? { color: "var(--color-green)", borderBottomColor: "var(--color-green)" } : undefined}
           >
             {tab}
             {tab === "Álbuns" && albums.length > 0 && (
               <span
                 className="ml-[4px] inline-flex items-center justify-center rounded-full text-[9px] font-bold"
                 style={{
-                  background: activeTab === "Álbuns" ? "#4A9EFF" : "rgba(255,255,255,.15)",
+                  background: activeTab === "Álbuns" ? "#22C98A" : "rgba(255,255,255,.15)",
                   color: activeTab === "Álbuns" ? "#fff" : "var(--color-text-3)",
                   minWidth: 14, height: 14, padding: "0 4px",
                 }}

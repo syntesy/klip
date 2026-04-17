@@ -242,8 +242,8 @@ export function TopicHeader({
             <button
               type="button"
               onClick={onNewTopic}
-              className="flex items-center gap-[5px] text-[12px] font-semibold text-white px-[10px] md:px-[14px] py-[6px] rounded-[6px] bg-blue border-0 transition-all leading-none hover:shadow-[0_3px_10px_rgba(18,73,160,.4)]"
-              style={{ boxShadow: "0 2px 6px rgba(18,73,160,.3)" }}
+              className="flex items-center gap-[5px] text-[12px] font-semibold text-white px-[10px] md:px-[14px] py-[6px] rounded-[6px] border-0 transition-all leading-none"
+              style={{ background: "var(--color-green)", boxShadow: "0 2px 6px rgba(34,201,138,.3)" }}
               title="Novo tópico"
             >
               <PlusIcon />
@@ -281,16 +281,16 @@ export function TopicHeader({
       <div
         className="flex items-center gap-[8px] px-5 py-[7px] text-[12px] cursor-pointer"
         style={{
-          background: "rgba(74,158,255,.08)",
-          borderBottom: "1px solid rgba(74,158,255,.2)",
+          background: "var(--color-green-dim)",
+          borderBottom: "1px solid var(--color-green-border)",
         }}
         onClick={onScrollToPin}
       >
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true" style={{ color: "var(--color-blue-bright)", flexShrink: 0 }}>
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true" style={{ color: "var(--color-green)", flexShrink: 0 }}>
           <path d="M9 2l5 5-6 6-1-3-4 4-1-1 4-4-3-1z" />
           <path d="M2 14l3-3" strokeLinecap="round" />
         </svg>
-        <span className="text-text-3 shrink-0 font-medium">
+        <span className="shrink-0 font-medium" style={{ color: "var(--color-green)" }}>
           {pinnedMessage.authorName}:
         </span>
         <span className="text-text-2 truncate flex-1">

@@ -261,7 +261,7 @@
 .klip-ai-label {
   font-size:      9px;
   font-weight:    700;
-  color:          var(--klip-blue);
+  color:          #22C98A;
   letter-spacing: .06em;
   text-transform: uppercase;
   margin-bottom:  3px;
@@ -561,7 +561,7 @@ nav[aria-label="Navegação principal"] {
 }
 :root .klip-ai-label,
 [data-theme="light"] .klip-ai-label {
-  color: #1249A0;
+  color: #22C98A;
 }
 :root .klip-decision-title,
 [data-theme="light"] .klip-decision-title {

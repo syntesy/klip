@@ -367,11 +367,11 @@ function MessageBubble({
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
             <span style={{
               width: 18, height: 18, borderRadius: "50%",
-              background: `${T.accent}22`,
+              background: `${T.green}22`,
               display: "inline-flex", alignItems: "center", justifyContent: "center",
-              fontSize: 9, color: T.accent, fontWeight: 700,
+              fontSize: 9, color: T.green, fontWeight: 700,
             }}>✦</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: T.accent }}>@klip</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.green }}>@klip</span>
             <span style={{ fontSize: 10, color: T.t4, marginLeft: "auto" }}>{fmtTime(msg.createdAt)}</span>
           </div>
           <p style={{ fontSize: 13, color: T.t2, lineHeight: 1.5, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>

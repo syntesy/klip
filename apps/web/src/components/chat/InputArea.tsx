@@ -814,12 +814,12 @@ export function InputArea({
           onClick={onRequestSummary}
           disabled={disabled}
           aria-label="@klip — Resumir com IA"
-          style={{ ...actionBtn(), color: "#4A9EFF", fontWeight: 500 }}
-          onMouseEnter={e => { e.currentTarget.style.background = "rgba(74,158,255,.08)"; e.currentTarget.style.color = "#4A9EFF"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#4A9EFF"; }}
+          style={{ ...actionBtn(), color: "#22C98A", fontWeight: 500 }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(34,201,138,.08)"; e.currentTarget.style.color = "#22C98A"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#22C98A"; }}
         >
           <svg width="18" height="18" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }} aria-hidden="true">
-            <path d="M7 1L8.2 5.1L12.5 7L8.2 8.9L7 13L5.8 8.9L1.5 7L5.8 5.1L7 1Z" stroke="#4A9EFF" strokeWidth="1.1" strokeLinejoin="round" fill="rgba(74,158,255,.15)" />
+            <path d="M7 1L8.2 5.1L12.5 7L8.2 8.9L7 13L5.8 8.9L1.5 7L5.8 5.1L7 1Z" stroke="#22C98A" strokeWidth="1.1" strokeLinejoin="round" fill="rgba(34,201,138,.15)" />
           </svg>
           @klip
         </button>

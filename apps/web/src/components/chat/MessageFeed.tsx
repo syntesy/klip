@@ -838,19 +838,19 @@ function KlipThinkingIndicator() {
     <div className="flex items-center gap-[10px] px-[8px] py-[8px] mt-1">
       <div
         className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0"
-        style={{ background: "rgba(74,158,255,.15)", border: "1px solid rgba(74,158,255,.25)" }}
+        style={{ background: "rgba(34,201,138,.15)", border: "1px solid rgba(34,201,138,.25)" }}
       >
-        <span style={{ fontSize: 14, color: "#4A9EFF" }}>✦</span>
+        <span style={{ fontSize: 14, color: "#22C98A" }}>✦</span>
       </div>
       <div className="flex items-center gap-[8px]">
-        <span className="text-[13px] font-semibold text-blue">@klip</span>
+        <span className="text-[13px] font-semibold" style={{ color: "#22C98A" }}>@klip</span>
         <span className="text-[13px] text-text-3 italic">está pensando…</span>
         <span className="flex gap-[3px]">
           {[0, 1, 2].map((i) => (
             <span
               key={i}
-              className="w-[5px] h-[5px] rounded-full bg-blue"
-              style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
+              className="w-[5px] h-[5px] rounded-full"
+              style={{ background: "#22C98A", animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
             />
           ))}
         </span>
@@ -864,18 +864,18 @@ function PrivateKlipPanel({ response, onClose }: { response: string; onClose: ()
     <div
       className="mx-[8px] mb-2 rounded-[12px] p-[14px_16px]"
       style={{
-        background: "rgba(74,158,255,.06)",
-        border: "1px solid rgba(74,158,255,.2)",
-        borderLeft: "3px solid #4A9EFF",
+        background: "rgba(34,201,138,.06)",
+        border: "1px solid rgba(34,201,138,.2)",
+        borderLeft: "3px solid #22C98A",
       }}
     >
       <div className="flex items-center justify-between mb-[8px]">
         <div className="flex items-center gap-[8px]">
-          <span style={{ fontSize: 12, color: "#4A9EFF" }}>✦</span>
-          <span className="text-[12px] font-semibold text-blue">Resposta privada do @klip</span>
+          <span style={{ fontSize: 12, color: "#22C98A" }}>✦</span>
+          <span className="text-[12px] font-semibold" style={{ color: "#22C98A" }}>Resposta privada do @klip</span>
           <span
             className="text-[10px] px-[6px] py-[1px] rounded-[4px]"
-            style={{ background: "rgba(74,158,255,.12)", color: "#4A9EFF" }}
+            style={{ background: "rgba(34,201,138,.12)", color: "#22C98A" }}
           >
             só você vê
           </span>
