@@ -27,22 +27,36 @@ export default async function AdminPage() {
   const { userId } = await auth();
   if (!ADMIN_USER_ID || userId !== ADMIN_USER_ID) redirect("/");
 
-  const sql = postgres(process.env.DATABASE_URL!);
+  if (!process.env.DATABASE_URL) {
+    return <div style={{ color: "#fff", padding: 40 }}>ERROR: DATABASE_URL not set</div>;
+  }
+
+  let sql: ReturnType<typeof postgres>;
+  try {
+    sql = postgres(process.env.DATABASE_URL);
+  } catch (e) {
+    return <div style={{ color: "#fff", padding: 40 }}>ERROR creating pg client: {String(e)}</div>;
+  }
 
   type CountRow = { count: number };
   type RevenueRow = { total: string | null };
   type CommunityRow = { id: string; name: string; slug: string; created_at: string };
   type PurchaseRow = { id: string; user_id: string; album_id: string; amount_paid: string; purchased_at: string };
 
-  const [
-    communitiesRes, topicsRes, messagesRes, membersRes, recentCommunities,
-  ] = await Promise.all([
-    sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM communities`,
-    sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM topics`,
-    sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM messages`,
-    sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM community_members`,
-    sql<CommunityRow[]>`SELECT id, name, slug, created_at FROM communities ORDER BY created_at DESC LIMIT 5`,
-  ]);
+  let communitiesRes: CountRow[], topicsRes: CountRow[], messagesRes: CountRow[], membersRes: CountRow[];
+  let recentCommunities: CommunityRow[];
+  try {
+    [communitiesRes, topicsRes, messagesRes, membersRes, recentCommunities] = await Promise.all([
+      sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM communities`,
+      sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM topics`,
+      sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM messages`,
+      sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM community_members`,
+      sql<CommunityRow[]>`SELECT id, name, slug, created_at FROM communities ORDER BY created_at DESC LIMIT 5`,
+    ]);
+  } catch (e) {
+    await sql.end();
+    return <div style={{ color: "#fff", padding: 40 }}>ERROR querying DB: {String(e)}</div>;
+  }
 
   // Album tables may not exist yet in production (pending migration)
   let totalAlbums = 0, totalPurchases = 0, revenue: string | null = null;
