@@ -136,7 +136,7 @@ export async function uploadsRoutes(fastify: FastifyInstance) {
       const attachment: Omit<Attachment, "duration"> = {
         type: isImage ? "image" : "audio",
         url: publicUrl,
-        name: part.filename || storagePath.split("/").pop() || "file",
+        name: (part.filename || storagePath.split("/").pop() || "file").replace(/[^\w.\-]/g, "_"),
         size: buffer.length,
       };
 

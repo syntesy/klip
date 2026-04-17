@@ -47,7 +47,7 @@ export const messages = pgTable(
     /** Marcado como decisão do grupo */
     isDecision: boolean("is_decision").notNull().default(false),
     /** Reply threading */
-    replyToId: uuid("reply_to_id"),
+    replyToId: uuid("reply_to_id").references((): any => messages.id, { onDelete: "set null" }),
     replyToAuthorName: varchar("reply_to_author_name", { length: 255 }),
     replyToContent: text("reply_to_content"),
   },

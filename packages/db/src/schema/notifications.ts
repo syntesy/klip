@@ -32,7 +32,7 @@ export const notifications = pgTable(
     // Prevents duplicate notifications for the same mention/event on a message
     uniqueIndex("notifications_recipient_message_type_unique").on(t.recipientClerkId, t.messageId, t.type),
     index("notifications_recipient_idx").on(t.recipientClerkId),
+    index("notifications_recipient_unread_idx").on(t.recipientClerkId, t.readAt),
     index("notifications_community_idx").on(t.communityId),
-    index("notifications_read_at_idx").on(t.readAt),
   ]
 );

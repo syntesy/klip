@@ -185,13 +185,33 @@ export async function albumRoutes(fastify: FastifyInstance) {
 
       const purchasedSet = new Set(purchases.map((p) => p.albumId));
 
-      const results = await Promise.all(
-        albums.map(async (album) => {
-          const hasPurchased = !album.isPremium || isOwnerOrMod || purchasedSet.has(album.id);
-          const previewPhotos = await getPreviewPhotos(album.id, hasPurchased);
-          return { ...album, hasPurchased, previewPhotos };
-        })
-      );
+      // Batch fetch preview photos for all albums in a single query
+      const allPhotos = albumIds.length > 0
+        ? await db
+            .select()
+            .from(albumPhotos)
+            .where(inArray(albumPhotos.albumId, albumIds))
+            .orderBy(albumPhotos.displayOrder)
+        : [];
+
+      // Group by albumId and take first 3
+      const photosByAlbum = new Map<string, typeof allPhotos>();
+      for (const photo of allPhotos) {
+        const group = photosByAlbum.get(photo.albumId) ?? [];
+        if (group.length < 3) group.push(photo);
+        photosByAlbum.set(photo.albumId, group);
+      }
+
+      const results = albums.map((album) => {
+        const hasPurchased = !album.isPremium || isOwnerOrMod || purchasedSet.has(album.id);
+        const photos = photosByAlbum.get(album.id) ?? [];
+        const previewPhotos = photos.map((p) => ({
+          id: p.id,
+          blurUrl: p.blurUrl ?? p.storageUrl,
+          ...(hasPurchased ? { thumbnailUrl: p.thumbnailUrl, storageUrl: p.storageUrl } : {}),
+        }));
+        return { ...album, hasPurchased, previewPhotos };
+      });
 
       return results;
     }

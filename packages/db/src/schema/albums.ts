@@ -84,6 +84,7 @@ export const albumPurchases = pgTable(
   },
   (t) => [
     index("idx_album_purchases_user").on(t.userId, t.albumId),
+    index("idx_album_purchases_album").on(t.albumId),
     uniqueIndex("idx_album_purchases_unique").on(t.userId, t.albumId),
   ]
 );

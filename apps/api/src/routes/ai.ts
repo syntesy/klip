@@ -32,7 +32,8 @@ export async function aiRoutes(fastify: FastifyInstance) {
     const communityTopics = await db
       .select({ id: topics.id, title: topics.title, communityId: topics.communityId })
       .from(topics)
-      .where(inArray(topics.communityId, communityIds));
+      .where(inArray(topics.communityId, communityIds))
+      .limit(1000);
 
     if (communityTopics.length === 0) return [];
 
@@ -191,11 +192,11 @@ export async function aiRoutes(fastify: FastifyInstance) {
             role: "user",
             content: `Você é um assistente que cria resumos concisos de conversas em comunidades.
 
-Tópico: "${topic.title}"
-${topic.description ? `Descrição: ${topic.description}` : ""}
+Tópico: <topic_title>${topic.title}</topic_title>
+${topic.description ? `Descrição: <topic_description>${topic.description}</topic_description>` : ""}
 
 Conversa:
-${conversation}
+<conversation>${conversation}</conversation>
 
 Crie um resumo estruturado com:
 - **Pontos principais discutidos**

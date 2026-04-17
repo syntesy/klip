@@ -70,9 +70,9 @@ export const extractedContents = pgTable(
   },
   (t) => [
     index("extracted_contents_community_id_idx").on(t.communityId),
+    index("extracted_contents_community_published_idx").on(t.communityId, t.publishedAt),
     index("extracted_contents_topic_id_idx").on(t.topicId),
     index("extracted_contents_created_by_idx").on(t.createdBy),
-    index("extracted_contents_published_at_idx").on(t.publishedAt),
   ]
 );
 

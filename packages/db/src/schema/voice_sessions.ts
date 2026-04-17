@@ -17,6 +17,7 @@ export const voiceSessions = pgTable('voice_sessions', {
 }, (t) => [
   // Covers the most frequent query: find active session for a topic
   index('voice_sessions_topic_status_idx').on(t.topicId, t.status),
+  index('voice_sessions_community_id_idx').on(t.communityId),
 ])
 
 export type VoiceSession = typeof voiceSessions.$inferSelect
