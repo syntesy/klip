@@ -205,8 +205,8 @@ export function TopicPageClient({
   const [purchasingAlbumId, setPurchasingAlbumId] = useState<string | null>(null);
   // Pinned message state — initialized from server data
   const [pinnedMessage, setPinnedMessage] = useState<PinnedMessage | null>(
-    topic.pinnedMessageId && topic.pinnedMessageContent && topic.pinnedMessageAuthor
-      ? { messageId: topic.pinnedMessageId, content: topic.pinnedMessageContent, authorName: topic.pinnedMessageAuthor }
+    topic.pinnedMessageId
+      ? { messageId: topic.pinnedMessageId, content: topic.pinnedMessageContent ?? "", authorName: topic.pinnedMessageAuthor ?? "" }
       : null
   );
 
@@ -487,7 +487,7 @@ export function TopicPageClient({
             onSummaryChange={setSummary}
             isAdmin={isAdmin}
             canSave={canSave}
-            onPin={(msg) => void handlePin(msg)}
+            {...(isAdmin ? { onPin: (msg: Message) => void handlePin(msg) } : {})}
             onAlbumPublished={handleAlbumPublished}
             onAlbumPurchased={handleAlbumPurchased}
             {...(isAdmin ? { onCreateAlbum: () => setAlbumCreateOpen(true) } : {})}

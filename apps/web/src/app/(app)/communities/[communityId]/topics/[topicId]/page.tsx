@@ -50,6 +50,9 @@ export default async function TopicPage({ params }: Props) {
     messageCount: topicData.messageCount,
     participantCount: 0,
     status: topicData.status,
+    pinnedMessageId: topicData.pinnedMessageId ?? null,
+    pinnedMessageContent: topicData.pinnedMessageContent ?? null,
+    pinnedMessageAuthor: topicData.pinnedMessageAuthor ?? null,
   };
 
   const topics: TopicItem[] = (topicsData ?? []).map((t: TopicItem & { lastActivityAt: string }) => ({

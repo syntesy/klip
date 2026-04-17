@@ -298,14 +298,16 @@ export function TopicHeader({
             ? pinnedMessage.content.slice(0, 80) + "…"
             : pinnedMessage.content}
         </span>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onUnpin?.(); }}
-          className="shrink-0 text-text-3 hover:text-text-1 transition-colors text-[16px] leading-none ml-1"
-          title="Desafixar"
-        >
-          ×
-        </button>
+        {isHost && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onUnpin?.(); }}
+            className="shrink-0 text-text-3 hover:text-text-1 transition-colors text-[16px] leading-none ml-1"
+            title="Desafixar"
+          >
+            ×
+          </button>
+        )}
       </div>
     )}
     </div>
