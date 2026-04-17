@@ -18,9 +18,14 @@ async function apiFetch(path: string, token: string) {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[apiFetch] ${path} → ${res.status}: ${body.slice(0, 200)}`);
+      return null;
+    }
     return res.json();
-  } catch {
+  } catch (err) {
+    console.error(`[apiFetch] ${path} → network error:`, err);
     return null;
   }
 }

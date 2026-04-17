@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch --clear-screen=false src/index.ts",
     "build": "tsup",
-    "start": "node dist/index.js",
+    "start": "cd ../../packages/db && npx drizzle-kit migrate && cd ../../apps/api && node dist/index.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

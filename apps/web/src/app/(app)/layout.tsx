@@ -16,10 +16,15 @@ async function fetchCommunities(): Promise<CommunityWithMeta[]> {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[fetchCommunities] ${res.status}: ${body.slice(0, 200)}`);
+      return [];
+    }
     const data = await res.json() as CommunityWithMeta[];
     return data.map((c) => ({ ...c, hasUnread: false }));
-  } catch {
+  } catch (err) {
+    console.error("[fetchCommunities] network error:", err);
     return [];
   }
 }

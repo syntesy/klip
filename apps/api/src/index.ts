@@ -13,6 +13,8 @@ import type {
   ServerToClientEvents,
   SocketData,
 } from "./socket/index.js";
+import { db } from "./lib/db.js";
+import { sql } from "drizzle-orm";
 import { communitiesRoutes } from "./routes/communities.js";
 import { topicsRoutes } from "./routes/topics.js";
 import { messagesRoutes } from "./routes/messages.js";
@@ -99,8 +101,18 @@ await fastify.register(savedMessagesRoutes, { prefix: "/api" });
 await fastify.register(klipAiRoutes, { prefix: "/api/topics" });
 await fastify.register(albumRoutes, { prefix: "/api" });
 
-// Health check
-fastify.get("/health", async () => ({ status: "ok", timestamp: new Date().toISOString() }));
+// Health check — verifies database connectivity and schema integrity
+fastify.get("/health", async () => {
+  try {
+    // Quick query touching a column from a recent migration to validate schema is current
+    const [row] = await db.execute(sql`SELECT COUNT(*) AS c FROM messages WHERE is_decision = false LIMIT 1`);
+    return { status: "ok", db: "connected", timestamp: new Date().toISOString() };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    fastify.log.error({ err }, "Health check DB failure");
+    return { status: "degraded", db: "error", error: msg, timestamp: new Date().toISOString() };
+  }
+});
 
 // Sentry error handler — captures unhandled 5xx before sending response
 fastify.setErrorHandler((error: FastifyError, _request, reply) => {
