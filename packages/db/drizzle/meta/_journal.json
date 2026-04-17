@@ -99,6 +99,20 @@
       "when": 1776600000000,
       "tag": "0013_saved_messages",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1776700000000,
+      "tag": "0014_decisions",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1776800000000,
+      "tag": "0015_albums",
+      "breakpoints": true
     }
   ]
 }
