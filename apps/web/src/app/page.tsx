@@ -5,13 +5,16 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  let userId: string | null = null;
   try {
-    const { userId } = await auth();
-    if (userId) {
-      redirect("/communities");
-    }
+    const result = await auth();
+    userId = result.userId;
   } catch {
-    // Clerk misconfigured (e.g. test keys on production domain) — show landing page
+    // Clerk misconfigured — show landing page
+  }
+
+  if (userId) {
+    redirect("/communities");
   }
 
   return (
