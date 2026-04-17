@@ -87,14 +87,16 @@ export default async function CommunityPage({ params }: Props) {
   const token = await getToken();
   if (!token) notFound();
 
-  const [community, topics] = await Promise.all([
+  const [community, topics, members] = await Promise.all([
     apiFetch(`/api/communities/${communityId}`, token) as Promise<Community | null>,
     apiFetch(`/api/topics?communityId=${communityId}`, token) as Promise<Topic[] | null>,
+    apiFetch(`/api/communities/${communityId}/members`, token) as Promise<{ userId: string }[] | null>,
   ]);
 
   if (!community) notFound();
 
   const topicList = topics ?? [];
+  const memberList = members ?? [];
   const pinned = topicList.filter((t) => t.isPinned);
   const regular = topicList.filter((t) => !t.isPinned);
   const totalMessages = topicList.reduce((s, t) => s + t.messageCount, 0);
@@ -110,7 +112,7 @@ export default async function CommunityPage({ params }: Props) {
         {/* Back link */}
         <Link
           href="/communities"
-          style={{ fontSize: 12, color: "#4A9EFF", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 14 }}
+          style={{ fontSize: 12, color: "#22C98A", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 14 }}
         >
           <span style={{ fontSize: 14, lineHeight: 1 }}>‹</span>
           Comunidades
@@ -160,7 +162,7 @@ export default async function CommunityPage({ params }: Props) {
           { label: "Mensagens", value: totalMessages > 0 ? String(totalMessages) : "–" },
           { label: "Klips", value: "–" },
           { label: "Decisões", value: "–" },
-          { label: "Membros", value: "–" },
+          { label: "Membros", value: memberList.length > 0 ? String(memberList.length) : "–" },
         ].map(({ label, value }, i) => (
           <div
             key={label}
