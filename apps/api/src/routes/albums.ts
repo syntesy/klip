@@ -376,24 +376,27 @@ export async function albumRoutes(fastify: FastifyInstance) {
 
       const displayOrder = Number(countRow?.count ?? 0);
 
-      const [photo] = await db
-        .insert(albumPhotos)
-        .values({
-          albumId,
-          uploadedBy: req.userId,
-          storageUrl:   publicUrl,
-          thumbnailUrl: publicUrl, // full-res serves as thumbnail (resize can be added with sharp later)
-          blurUrl:      publicUrl, // frontend applies CSS blur for locked preview
-          displayOrder,
-          fileSizeKb: Math.ceil(buffer.length / 1024),
-        })
-        .returning();
+      const photo = await db.transaction(async (tx) => {
+        const [inserted] = await tx
+          .insert(albumPhotos)
+          .values({
+            albumId,
+            uploadedBy: req.userId,
+            storageUrl:   publicUrl,
+            thumbnailUrl: publicUrl, // full-res serves as thumbnail (resize can be added with sharp later)
+            blurUrl:      publicUrl, // frontend applies CSS blur for locked preview
+            displayOrder,
+            fileSizeKb: Math.ceil(buffer.length / 1024),
+          })
+          .returning();
 
-      // Increment photo_count
-      await db
-        .update(photoAlbums)
-        .set({ photoCount: sql`${photoAlbums.photoCount} + 1`, updatedAt: new Date() })
-        .where(eq(photoAlbums.id, albumId));
+        await tx
+          .update(photoAlbums)
+          .set({ photoCount: sql`${photoAlbums.photoCount} + 1`, updatedAt: new Date() })
+          .where(eq(photoAlbums.id, albumId));
+
+        return inserted;
+      });
 
       return reply.status(201).send(photo);
     }
@@ -413,12 +416,39 @@ export async function albumRoutes(fastify: FastifyInstance) {
       const auth = await assertOwnerOrMod(album.communityId, req.userId);
       if (!auth.ok) return reply.status(auth.status).send({ error: "Access denied" });
 
-      await db.delete(albumPhotos).where(and(eq(albumPhotos.id, photoId), eq(albumPhotos.albumId, albumId)));
+      // Fetch photo first so we can clean up the storage file
+      const [photo] = await db
+        .select({ id: albumPhotos.id, storageUrl: albumPhotos.storageUrl })
+        .from(albumPhotos)
+        .where(and(eq(albumPhotos.id, photoId), eq(albumPhotos.albumId, albumId)))
+        .limit(1);
 
-      await db
-        .update(photoAlbums)
-        .set({ photoCount: sql`GREATEST(${photoAlbums.photoCount} - 1, 0)`, updatedAt: new Date() })
-        .where(eq(photoAlbums.id, albumId));
+      if (!photo) return reply.status(404).send({ error: "Photo not found" });
+
+      await db.transaction(async (tx) => {
+        await tx.delete(albumPhotos).where(eq(albumPhotos.id, photoId));
+
+        await tx
+          .update(photoAlbums)
+          .set({ photoCount: sql`GREATEST(${photoAlbums.photoCount} - 1, 0)`, updatedAt: new Date() })
+          .where(eq(photoAlbums.id, albumId));
+      });
+
+      // Best-effort storage cleanup — don't fail the request if removal errors
+      try {
+        const supabase = getSupabase();
+        // Extract path from public URL: everything after /object/public/BUCKET/
+        const urlObj = new URL(photo.storageUrl);
+        const prefix = `/storage/v1/object/public/${BUCKET}/`;
+        const storagePath = urlObj.pathname.startsWith(prefix)
+          ? urlObj.pathname.slice(prefix.length)
+          : null;
+        if (storagePath) {
+          await supabase.storage.from(BUCKET).remove([storagePath]);
+        }
+      } catch (err) {
+        fastify.log.warn(err, "Failed to remove photo from storage (orphaned file)");
+      }
 
       return reply.status(204).send();
     }

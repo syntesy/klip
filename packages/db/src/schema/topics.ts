@@ -48,6 +48,8 @@ export const topics = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    /** Soft delete — preserva mensagens e conteúdo extraído */
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (t) => [
     // Composite — cobre o query do sidebar inteiro com um único index scan

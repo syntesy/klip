@@ -3,7 +3,7 @@ import { requireAuth } from "../plugins/auth.js";
 import { db } from "../lib/db.js";
 import { bulkGetClerkDisplayNames } from "../lib/clerkCache.js";
 import { topics, communityMembers, messages } from "@klip/db/schema";
-import { eq, and, desc, ilike, isNull, inArray } from "drizzle-orm";
+import { eq, and, desc, ilike, isNull, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 
 const createTopicSchema = z.object({
@@ -49,7 +49,7 @@ export async function topicsRoutes(fastify: FastifyInstance) {
       return db
         .select()
         .from(topics)
-        .where(and(eq(topics.communityId, communityId), eq(topics.status, "active")))
+        .where(and(eq(topics.communityId, communityId), eq(topics.status, "active"), isNull(topics.deletedAt)))
         .orderBy(desc(topics.isPinned), desc(topics.lastActivityAt))
         .limit(200);
     }
@@ -199,7 +199,10 @@ export async function topicsRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ error: "Only owner or moderator can delete topics" });
       }
 
-      await db.delete(topics).where(eq(topics.id, req.params.id));
+      await db
+        .update(topics)
+        .set({ deletedAt: new Date() })
+        .where(eq(topics.id, req.params.id));
       return reply.status(204).send();
     }
   );

@@ -34,6 +34,8 @@ export const communities = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    /** Soft delete — preserva dados de membros, tópicos e mensagens */
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (t) => [
     uniqueIndex("communities_slug_unique").on(t.slug),

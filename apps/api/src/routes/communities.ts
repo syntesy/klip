@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import { requireAuth } from "../plugins/auth.js";
 import { db } from "../lib/db.js";
 import { communities, communityMembers } from "@klip/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 const createCommunitySchema = z.object({
@@ -19,7 +19,7 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
       .select({ community: communities })
       .from(communityMembers)
       .innerJoin(communities, eq(communityMembers.communityId, communities.id))
-      .where(eq(communityMembers.userId, req.userId));
+      .where(and(eq(communityMembers.userId, req.userId), isNull(communities.deletedAt)));
 
     return rows.map((r) => r.community);
   });
@@ -47,7 +47,7 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
       const [community] = await db
         .select()
         .from(communities)
-        .where(eq(communities.id, req.params.id))
+        .where(and(eq(communities.id, req.params.id), isNull(communities.deletedAt)))
         .limit(1);
 
       if (!community) {
@@ -182,7 +182,10 @@ export async function communitiesRoutes(fastify: FastifyInstance) {
         return reply.status(403).send({ error: "Only the owner can delete this community" });
       }
 
-      await db.delete(communities).where(eq(communities.id, req.params.id));
+      await db
+        .update(communities)
+        .set({ deletedAt: new Date() })
+        .where(eq(communities.id, req.params.id));
       return reply.status(204).send();
     }
   );
