@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import postgres from "postgres";
 
-const ADMIN_USER_ID = process.env.ADMIN_CLERK_USER_ID;
+export const dynamic = "force-dynamic";
 
 function fmt(date: Date | string) {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -23,6 +23,7 @@ function fmtBRL(value: string | null) {
 }
 
 export default async function AdminPage() {
+  const ADMIN_USER_ID = process.env.ADMIN_CLERK_USER_ID;
   const { userId } = await auth();
   if (!ADMIN_USER_ID || userId !== ADMIN_USER_ID) redirect("/");
 
