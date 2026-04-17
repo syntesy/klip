@@ -10,16 +10,19 @@ async function fetchCommunities(): Promise<CommunityWithMeta[]> {
   try {
     const { getToken } = await auth();
     const token = await getToken();
-    if (!token) return [];
+    if (!token) { console.error("[fetchCommunities] no token"); return []; }
 
-    const res = await fetch(`${API_URL}/api/communities`, {
+    const url = `${API_URL}/api/communities`;
+    console.log("[fetchCommunities] fetching", url);
+    const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     });
-    if (!res.ok) return [];
+    if (!res.ok) { console.error("[fetchCommunities] API error", res.status, await res.text()); return []; }
     const data = await res.json() as CommunityWithMeta[];
     return data.map((c) => ({ ...c, hasUnread: false }));
-  } catch {
+  } catch (e) {
+    console.error("[fetchCommunities] exception", e);
     return [];
   }
 }
