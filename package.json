@@ -10,7 +10,8 @@
     "typecheck": "turbo run typecheck",
     "db:generate": "turbo run db:generate",
     "db:migrate": "turbo run db:migrate",
-    "db:studio": "pnpm --filter @klip/db studio"
+    "db:studio": "pnpm --filter @klip/db studio",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "devDependencies": {
     "tsx": "^4.19.2",

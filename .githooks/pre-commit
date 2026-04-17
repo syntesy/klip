@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Git pre-commit hook — runs all project checks before allowing a commit.
+# Install: git config core.hooksPath .githooks
+# Or: pnpm prepare (runs automatically after pnpm install)
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# Check 1: Drizzle schema ↔ migration sync
+"$REPO_ROOT/scripts/check-migrations.sh"

@@ -1,0 +1,118 @@
+name: Check Drizzle Migrations
+
+on:
+  pull_request:
+    paths:
+      - "packages/db/src/schema/**"
+      - "packages/db/drizzle/**"
+      - "packages/db/drizzle.config.ts"
+  push:
+    branches: [main]
+    paths:
+      - "packages/db/src/schema/**"
+      - "packages/db/drizzle/**"
+      - "packages/db/drizzle.config.ts"
+
+concurrency:
+  group: check-migrations-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-migrations:
+    name: Schema ↔ Migrations sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate migrations (dry run)
+        working-directory: packages/db
+        run: pnpm drizzle-kit generate
+
+      - name: Check for uncommitted migration changes
+        run: |
+          # Check for any changes (modified, new, deleted) in the drizzle directory
+          CHANGES=$(git status --porcelain packages/db/drizzle/)
+
+          if [ -n "$CHANGES" ]; then
+            echo "::error::Schema mudou mas as migrations nao foram geradas/commitadas."
+            echo ""
+            echo "=========================================="
+            echo "  FALHA: Schema fora de sync"
+            echo "=========================================="
+            echo ""
+            echo "Arquivos fora de sync:"
+            echo "$CHANGES"
+            echo ""
+            echo "Diff detalhado:"
+            git diff packages/db/drizzle/
+            git diff --cached packages/db/drizzle/
+            # Also show untracked files content
+            git ls-files --others --exclude-standard packages/db/drizzle/ | while read f; do
+              echo "--- NEW FILE: $f ---"
+              head -20 "$f"
+              echo "..."
+            done
+            echo ""
+            echo "=========================================="
+            echo "  FIX: rode 'pnpm db:generate' e commite"
+            echo "=========================================="
+            exit 1
+          fi
+
+          echo "Migrations em sync com schema."
+
+      - name: Validate journal integrity
+        run: |
+          JOURNAL="packages/db/drizzle/meta/_journal.json"
+
+          if [ ! -f "$JOURNAL" ]; then
+            echo "::error::Journal file missing: $JOURNAL"
+            exit 1
+          fi
+
+          # Check journal is valid JSON
+          if ! node -e "import{readFileSync as r}from'fs';JSON.parse(r('$JOURNAL','utf8'))" --input-type=module; then
+            echo "::error::Journal is not valid JSON"
+            exit 1
+          fi
+
+          # Check each migration entry has a corresponding SQL file and snapshot
+          node --input-type=module -e "
+            import { readFileSync, existsSync } from 'fs';
+            const j = JSON.parse(readFileSync('$JOURNAL', 'utf8'));
+            let ok = true;
+            for (const e of j.entries) {
+              const sql = 'packages/db/drizzle/' + e.tag + '.sql';
+              if (!existsSync(sql)) {
+                console.error('ERRO: journal entry ' + e.idx + ' referencia ' + sql + ' que nao existe');
+                ok = false;
+              }
+              const snap = 'packages/db/drizzle/meta/' + String(e.idx).padStart(4, '0') + '_snapshot.json';
+              if (!existsSync(snap)) {
+                console.error('ERRO: snapshot ' + snap + ' nao encontrado para entry ' + e.idx);
+                ok = false;
+              }
+            }
+            for (let i = 0; i < j.entries.length; i++) {
+              if (j.entries[i].idx !== i) {
+                console.error('ERRO: journal idx ' + j.entries[i].idx + ' deveria ser ' + i);
+                ok = false;
+              }
+            }
+            if (!ok) process.exit(1);
+            console.log('Journal integro: ' + j.entries.length + ' entries, todos com SQL e snapshot.');
+          "
