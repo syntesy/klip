@@ -152,7 +152,7 @@ function DecisionsModal({ summary, onClose }: { summary: TopicSummary | null; on
         {!summary || summary.decisions.length === 0 ? (
           <p className="text-[13px] text-text-3 py-4 text-center">
             Nenhuma decisão registrada ainda.<br />
-            <span className="text-[12px]">Use "Resumo IA" para gerar um resumo com decisões.</span>
+            <span className="text-[12px]">Use "Gerar resumo" para criar um resumo com decisões.</span>
           </p>
         ) : (
           <div className="flex flex-col gap-[8px]">

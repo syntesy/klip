@@ -362,7 +362,7 @@ export function TopicList({
             {!topicSummary || topicSummary.decisions.length === 0 ? (
               <div className="flex flex-col items-center gap-[8px] py-10 text-center">
                 <p className="text-[13px] font-medium text-text-2">Nenhuma decisão ainda</p>
-                <p className="text-[12px] text-text-3">Use "Resumo IA" no header para gerar um resumo com decisões.</p>
+                <p className="text-[12px] text-text-3">Use "Gerar resumo" no header para criar um resumo com decisões.</p>
               </div>
             ) : (
               <div className="flex flex-col gap-[8px]">

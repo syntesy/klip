@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
+import { MessageSquarePlus, CheckCircle2, Radio, Sparkles, MoreVertical } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,30 +59,6 @@ function ChevronLeft() {
   );
 }
 
-function DecisionIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <path d="M8 2l1.5 3 3.5.5-2.5 2.5.6 3.5L8 10l-3.1 1.5.6-3.5L3 5.5l3.5-.5z" />
-    </svg>
-  );
-}
-
-function SummaryIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <circle cx="7" cy="7" r="4" />
-      <path d="M7 4v3l2 2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#fff" strokeWidth="1.6" aria-hidden="true">
-      <path d="M8 3v10M3 8h10" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 function SearchIcon() {
   return (
@@ -123,6 +100,7 @@ export function TopicHeader({
 }: TopicHeaderProps) {
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (isSearchOpen) {
@@ -226,27 +204,65 @@ export function TopicHeader({
               onClick={onMarkDecision}
               className="hidden md:flex items-center gap-[5px] text-[12px] font-medium text-text-3 px-[10px] py-[6px] rounded-[6px] bg-transparent border-0 hover:bg-bg-subtle hover:text-text-1 transition-colors leading-none"
             >
-              <DecisionIcon />
-              Decisões
+              <CheckCircle2 size={12} />
+              Marcar decisão
             </button>
             <button
               type="button"
               onClick={onRequestSummary}
               className="hidden md:flex items-center gap-[5px] text-[12px] font-medium text-text-3 px-[10px] py-[6px] rounded-[6px] bg-transparent border-0 hover:bg-bg-subtle hover:text-text-1 transition-colors leading-none"
             >
-              <SummaryIcon />
-              Resumo IA
+              <Sparkles size={12} />
+              Gerar resumo
             </button>
+
+            {/* Mobile overflow menu for hidden actions */}
+            <div className="relative md:hidden">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((v) => !v)}
+                aria-label="Mais ações"
+                className="flex items-center justify-center w-[30px] h-[30px] rounded-[6px] text-text-3 bg-transparent border-0 hover:bg-bg-subtle hover:text-text-1 transition-colors"
+              >
+                <MoreVertical size={14} />
+              </button>
+              {mobileMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-[90]" onClick={() => setMobileMenuOpen(false)} />
+                  <div
+                    className="absolute top-[calc(100%+4px)] right-0 z-[100] bg-bg-surface border border-border rounded-[10px] p-1 min-w-[180px]"
+                    style={{ boxShadow: "0 8px 24px rgba(0,0,0,.25)" }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => { setMobileMenuOpen(false); onMarkDecision?.(); }}
+                      className="w-full text-left bg-transparent border-0 text-text-2 py-[8px] px-[12px] text-[13px] cursor-pointer rounded-[6px] flex items-center gap-2 hover:bg-bg-subtle transition-colors"
+                    >
+                      <CheckCircle2 size={13} />
+                      Marcar decisão
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setMobileMenuOpen(false); onRequestSummary?.(); }}
+                      className="w-full text-left bg-transparent border-0 text-text-2 py-[8px] px-[12px] text-[13px] cursor-pointer rounded-[6px] flex items-center gap-2 hover:bg-bg-subtle transition-colors"
+                    >
+                      <Sparkles size={13} />
+                      Gerar resumo
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* CTA primário — icon-only on mobile, text on md+ */}
             <button
               type="button"
               onClick={onNewTopic}
               className="flex items-center gap-[5px] text-[12px] font-semibold text-white px-[10px] md:px-[14px] py-[6px] rounded-[6px] border-0 transition-all leading-none"
-              style={{ background: "var(--color-green)", boxShadow: "0 2px 6px rgba(34,201,138,.3)" }}
+              style={{ background: "#4A9EFF", boxShadow: "0 2px 6px rgba(74,158,255,.3)" }}
               title="Novo tópico"
             >
-              <PlusIcon />
+              <MessageSquarePlus size={12} />
               <span className="hidden md:inline">Novo tópico</span>
             </button>
 
@@ -267,8 +283,8 @@ export function TopicHeader({
                   color: "var(--color-text-2)",
                 }}
               >
-                <span>{activeVoiceSession ? '⏹' : '🎙️'}</span>
-                <span className="hidden md:inline">{activeVoiceSession ? ' Encerrar' : ' Ao vivo'}</span>
+                <Radio size={12} />
+                <span className="hidden md:inline">{activeVoiceSession ? ' Encerrar' : ' Iniciar live'}</span>
               </button>
             )}
           </div>

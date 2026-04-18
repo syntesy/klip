@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { MessageSquarePlus, CheckCircle2, Radio, Sparkles, MoreVertical, Trash2 } from "lucide-react";
 import { NewTopicModal } from "@/components/communities/NewTopicButton";
-import { InviteButton } from "@/components/communities/InviteButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -37,112 +37,85 @@ export function CommunityActions({ communityId, communityName }: Props) {
     }
   }
 
-  const secondaryStyle: React.CSSProperties = {
-    background: "var(--color-bg-subtle)",
-    border: "1px solid var(--color-border)",
-    borderRadius: 10,
-    color: "var(--color-text-1)",
-    padding: "10px 14px",
-    fontSize: 13,
-    fontWeight: 500,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  };
-
   return (
     <>
-      <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
-        {/* Novo tópico — primário */}
+      <div className="flex items-center justify-end gap-1 md:gap-2 shrink-0">
+        {/* Marcar decisão — icon-only mobile, text desktop */}
+        <button
+          type="button"
+          onClick={() => {/* TODO: hook decision handler */}}
+          className="flex items-center gap-[6px] rounded-[10px] border border-border bg-transparent text-text-2 text-[13px] font-medium cursor-pointer whitespace-nowrap p-[7px] md:px-[14px] md:py-[8px] hover:bg-bg-subtle transition-colors"
+          title="Marcar decisão"
+        >
+          <CheckCircle2 size={14} />
+          <span className="hidden md:inline">Marcar decisão</span>
+        </button>
+
+        {/* Iniciar live — icon-only mobile, text desktop */}
+        <button
+          type="button"
+          onClick={() => {/* TODO: hook voice handler */}}
+          className="flex items-center gap-[6px] rounded-[10px] border border-border bg-transparent text-text-2 text-[13px] font-medium cursor-pointer whitespace-nowrap p-[7px] md:px-[14px] md:py-[8px] hover:bg-bg-subtle transition-colors"
+          title="Iniciar live"
+        >
+          <Radio size={14} />
+          <span className="hidden md:inline">Iniciar live</span>
+        </button>
+
+        {/* Novo tópico — primário sólido, icon-only mobile */}
         <button
           type="button"
           onClick={() => setTopicOpen(true)}
-          style={{
-            flex: 1,
-            background: "#4A9EFF",
-            color: "#fff",
-            border: "none",
-            borderRadius: 10,
-            padding: "10px 14px",
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: "pointer",
-            whiteSpace: "nowrap",
-          }}
+          className="flex items-center gap-[6px] rounded-[10px] border-0 text-white text-[13px] font-semibold cursor-pointer whitespace-nowrap p-[7px] md:px-[16px] md:py-[8px] transition-colors"
+          style={{ background: "#4A9EFF", boxShadow: "0 2px 6px rgba(74,158,255,.25)" }}
+          title="Novo tópico"
         >
-          + Novo tópico
+          <MessageSquarePlus size={14} />
+          <span className="hidden md:inline">Novo tópico</span>
         </button>
 
-        {/* Convidar — secundário */}
-        <InviteButton communityId={communityId} triggerStyle={secondaryStyle} />
-
-        {/* ··· menu */}
-        <div style={{ position: "relative" }}>
+        {/* ⋮ menu — Gerar resumo + Excluir */}
+        <div className="relative">
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Mais opções"
-            style={{
-              width: 38,
-              height: "100%",
-              minHeight: 40,
-              background: "var(--color-bg-subtle)",
-              border: "1px solid var(--color-border)",
-              borderRadius: 10,
-              color: "var(--color-text-2)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 18,
-              letterSpacing: 2,
-            }}
+            className="flex items-center justify-center w-[34px] h-[34px] rounded-[10px] border border-border bg-transparent text-text-3 cursor-pointer hover:bg-bg-subtle transition-colors"
           >
-            ···
+            <MoreVertical size={16} />
           </button>
 
           {menuOpen && (
             <>
               <div
-                style={{ position: "fixed", inset: 0, zIndex: 90 }}
+                className="fixed inset-0 z-[90]"
                 onClick={() => setMenuOpen(false)}
               />
               <div
-                style={{
-                  position: "absolute",
-                  top: "calc(100% + 6px)",
-                  right: 0,
-                  zIndex: 100,
-                  background: "var(--color-bg-surface)",
-                  border: "1px solid var(--color-border)",
-                  borderRadius: 10,
-                  padding: 4,
-                  minWidth: 190,
-                  boxShadow: "0 8px 24px rgba(0,0,0,.25)",
-                }}
+                className="absolute top-[calc(100%+6px)] right-0 z-[100] bg-bg-surface border border-border rounded-[10px] p-1 min-w-[200px]"
+                style={{ boxShadow: "0 8px 24px rgba(0,0,0,.25)" }}
               >
+                {/* Gerar resumo */}
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); /* TODO: hook summary handler */ }}
+                  className="w-full text-left bg-transparent border-0 text-text-2 py-[8px] px-[12px] text-[13px] cursor-pointer rounded-[6px] flex items-center gap-2 hover:bg-bg-subtle transition-colors"
+                >
+                  <Sparkles size={14} />
+                  Gerar resumo
+                </button>
+
+                {/* Separador */}
+                <div className="h-px mx-2 my-1" style={{ background: "var(--color-border)" }} />
+
+                {/* Excluir comunidade */}
                 <button
                   type="button"
                   onClick={() => { setMenuOpen(false); setDeleteOpen(true); }}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    background: "none",
-                    border: "none",
-                    color: "#ef4444",
-                    padding: "8px 12px",
-                    fontSize: 13,
-                    cursor: "pointer",
-                    borderRadius: 6,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
+                  className="w-full text-left bg-transparent border-0 py-[8px] px-[12px] text-[13px] cursor-pointer rounded-[6px] flex items-center gap-2 hover:bg-bg-subtle transition-colors"
+                  style={{ color: "#ef4444" }}
                 >
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                    <polyline points="3 6 13 6" strokeLinecap="round" />
-                    <path d="M5 6V4a1 1 0 011-1h4a1 1 0 011 1v2" strokeLinecap="round" />
-                    <rect x="2" y="6" width="12" height="9" rx="1" />
-                  </svg>
+                  <Trash2 size={14} />
                   Excluir comunidade
                 </button>
               </div>

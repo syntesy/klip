@@ -118,8 +118,8 @@ export default async function CommunityPage({ params }: Props) {
           Comunidades
         </Link>
 
-        {/* Comunidade: ícone + nome + slug */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+        {/* Comunidade: ícone + nome + ações */}
+        <div className="flex items-center gap-3">
           <div
             style={{
               width: 44, height: 44, borderRadius: 14,
@@ -140,21 +140,24 @@ export default async function CommunityPage({ params }: Props) {
               {community.description && <span style={{ marginLeft: 6 }}>· {community.description}</span>}
             </div>
           </div>
-        </div>
 
-        {/* Ações: Novo tópico + Convidar + ··· */}
-        <CommunityActions communityId={communityId} communityName={community.name} />
+          {/* Ações: alinhadas à direita */}
+          <CommunityActions communityId={communityId} communityName={community.name} />
+        </div>
       </div>
+
+      {/* Separador de 24px entre ações e barra de stats/abas */}
+      <div style={{ height: 24, flexShrink: 0 }} />
 
       {/* ── Barra de stats ──────────────────────────────────────────────── */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr 1fr 1fr",
-          background: "var(--color-bg-muted)",
+          background: "var(--color-bg-surface)",
           borderTop: "1px solid var(--color-border-mid)",
           borderBottom: "1px solid var(--color-border-mid)",
-          margin: "14px 0 0",
+          margin: 0,
           flexShrink: 0,
         }}
       >
