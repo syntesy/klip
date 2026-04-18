@@ -113,6 +113,13 @@
       "when": 1776800000000,
       "tag": "0015_albums",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1776517228674,
+      "tag": "0016_premium_klips_v2",
+      "breakpoints": true
     }
   ]
 }
