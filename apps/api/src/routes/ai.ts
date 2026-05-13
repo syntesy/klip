@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import Anthropic from "@anthropic-ai/sdk";
 import { requireAuth } from "../plugins/auth.js";
 import { db } from "../lib/db.js";
+import { tryEmit } from "../lib/io.js";
 import { checkRateLimit, anthropicCircuitBreaker, sanitizeMarkdown } from "../lib/aiGuards.js";
 import { messages, topics, communityMembers, aiSummaries } from "@klip/db/schema";
 import { eq, and, asc, desc, inArray, isNull } from "drizzle-orm";
@@ -234,6 +235,14 @@ Seja conciso e objetivo. Use markdown.`,
         requestedBy: req.userId,
       })
       .returning();
+
+    if (summary) {
+      tryEmit(`topic:${topicId}`, "summary:updated", {
+        content: summary.content,
+        decisions: [] as string[],
+        generatedAt: summary.createdAt,
+      });
+    }
 
     return summary;
   });
