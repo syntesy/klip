@@ -16,7 +16,6 @@ export interface MessageWithAuthor {
   content: string;
   isEdited: boolean;
   isKlipped: boolean;
-  isDecision: boolean;
   attachments: Attachment[];
   createdAt: Date;
   updatedAt: Date;
@@ -50,7 +49,6 @@ export interface ClientToServerEvents {
     replyToId?: string;
     replyToAuthorName?: string;
     replyToContent?: string;
-    isDecision?: boolean;
   }) => void;
   "typing:start": (topicId: string) => void;
   "typing:stop": (topicId: string) => void;
@@ -70,8 +68,6 @@ export interface ServerToClientEvents {
   "voice:speak-granted": (payload: { sessionId: string }) => void;
   "notification:new": (payload: { notification: Record<string, unknown> }) => void;
   "premium:new": (payload: { title: string; price: number; communityId: string; premiumKlipId: string }) => void;
-  "album:published": (payload: { albumId: string; topicId: string | null | undefined; album: Record<string, unknown> }) => void;
-  "album:purchased": (payload: { albumId: string; photos: Record<string, unknown>[] }) => void;
 }
 
 export interface SocketData {
@@ -209,7 +205,7 @@ export function registerSocketHandlers(io: KlipServer): void {
 
     // ── Send message ────────────────────────────────────────────────────────
 
-    socket.on("message:send", async ({ topicId, content, tempId, attachments, replyToId, replyToAuthorName, replyToContent, isDecision }) => {
+    socket.on("message:send", async ({ topicId, content, tempId, attachments, replyToId, replyToAuthorName, replyToContent }) => {
       if (!content?.trim() && (!attachments || attachments.length === 0)) return;
       if (!topicId) return;
       if (content && content.length > 4000) {
@@ -248,7 +244,6 @@ export function registerSocketHandlers(io: KlipServer): void {
               authorId: userId,
               content: content.trim(),
               attachments: attachments ?? [],
-              isDecision: isDecision === true,
               ...(replyToId ? { replyToId, replyToAuthorName, replyToContent } : {}),
             })
             .returning();
@@ -277,7 +272,6 @@ export function registerSocketHandlers(io: KlipServer): void {
           content: msg.content,
           isEdited: msg.isEdited,
           isKlipped: false,
-          isDecision: msg.isDecision,
           attachments: (msg.attachments as Attachment[]) ?? [],
           createdAt: msg.createdAt,
           updatedAt: msg.updatedAt,

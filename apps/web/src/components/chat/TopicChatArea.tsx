@@ -33,9 +33,6 @@ export interface TopicChatAreaProps {
   canSave?: boolean;
   onPin?: (msg: Message) => void;
   highlightedMessageId?: string | null;
-  onAlbumPublished?: (payload: { albumId: string; topicId: string | null | undefined; album: Record<string, unknown> }) => void;
-  onAlbumPurchased?: (payload: { albumId: string; photos: Record<string, unknown>[] }) => void;
-  onCreateAlbum?: () => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -48,7 +45,6 @@ function toFeedMessage(m: MessageWithAuthor): Message {
     content: m.content,
     isEdited: m.isEdited,
     isKlipped: m.isKlipped,
-    isDecision: m.isDecision,
     attachments: m.attachments,
     // Socket sends ISO strings — ensure they are Date objects
     createdAt: m.createdAt instanceof Date ? m.createdAt : new Date(m.createdAt as unknown as string),
@@ -84,9 +80,6 @@ function TopicChatAreaInner({
   canSave,
   onPin,
   highlightedMessageId,
-  onAlbumPublished,
-  onAlbumPurchased,
-  onCreateAlbum,
   userId,
   userName,
   getToken,
@@ -97,7 +90,6 @@ function TopicChatAreaInner({
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
   const [klipThinking, setKlipThinking] = useState(false);
   const [privateKlipResponse, setPrivateKlipResponse] = useState<string | null>(null);
-  const [decisionMode, setDecisionMode] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -184,8 +176,6 @@ function TopicChatAreaInner({
     onSummaryUpdated: handleSummaryUpdated,
     onVoiceStarted: handleVoiceStarted,
     onVoiceEnded: handleVoiceEnded,
-    ...(onAlbumPublished ? { onAlbumPublished } : {}),
-    ...(onAlbumPurchased ? { onAlbumPurchased } : {}),
   });
 
   // Propagate connection state to parent — useEffect prevents updating parent during render
@@ -217,8 +207,7 @@ function TopicChatAreaInner({
         ? { replyToId: reply.messageId, replyToAuthorName: reply.authorName, replyToContent: reply.content.slice(0, 200) }
         : undefined;
 
-      const isDecision = decisionMode;
-      const tempId = sendMessage(content, attachments, replyPayload, isDecision);
+      const tempId = sendMessage(content, attachments, replyPayload);
 
       const optimistic: Message = {
         id: tempId,
@@ -227,7 +216,6 @@ function TopicChatAreaInner({
         content,
         isEdited: false,
         isKlipped: false,
-        isDecision,
         attachments,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -240,9 +228,8 @@ function TopicChatAreaInner({
         } : {}),
       };
       setMessages((prev) => [...prev, optimistic]);
-      if (isDecision) setDecisionMode(false);
     },
-    [topicId, userId, userName, sendMessage, decisionMode]
+    [topicId, userId, userName, sendMessage]
   );
 
   const handleTyping = useCallback(() => {
@@ -276,10 +263,6 @@ function TopicChatAreaInner({
     },
     [getToken]
   );
-
-  const handleMarkDecision = useCallback(() => {
-    setDecisionMode((prev) => !prev);
-  }, []);
 
   const handleRequestSummary = useCallback(async () => {
     const token = getToken ? await getToken() : null;
@@ -396,15 +379,12 @@ function TopicChatAreaInner({
         topicTitle={topicTitle}
         {...(communityId ? { communityId } : {})}
         onSendMessage={handleSendMessage}
-        onMarkDecision={handleMarkDecision}
-        decisionMode={decisionMode}
         onRequestSummary={handleRequestSummary}
         onKlipCommand={handleKlipCommand}
         onTyping={handleTyping}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
         isAdmin={isAdmin ?? false}
-        {...(onCreateAlbum ? { onCreateAlbum } : {})}
         {...(getToken !== undefined ? { getToken } : {})}
       />
     </div>

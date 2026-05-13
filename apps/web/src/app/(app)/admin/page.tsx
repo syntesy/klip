@@ -14,13 +14,6 @@ function fmt(date: Date | string) {
   }).format(new Date(date));
 }
 
-function fmtBRL(value: string | null) {
-  const n = parseFloat(value ?? "0");
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(isNaN(n) ? 0 : n);
-}
 
 export default async function AdminPage() {
   const ADMIN_USER_ID = process.env.ADMIN_CLERK_USER_ID;
@@ -39,9 +32,7 @@ export default async function AdminPage() {
   }
 
   type CountRow = { count: number };
-  type RevenueRow = { total: string | null };
   type CommunityRow = { id: string; name: string; slug: string; created_at: string };
-  type PurchaseRow = { id: string; user_id: string; album_id: string; amount_paid: string; purchased_at: string };
 
   let communitiesRes: CountRow[], topicsRes: CountRow[], messagesRes: CountRow[], membersRes: CountRow[];
   let recentCommunities: CommunityRow[];
@@ -56,24 +47,6 @@ export default async function AdminPage() {
   } catch (e) {
     await sql.end();
     return <div style={{ color: "#fff", padding: 40 }}>ERROR querying DB: {String(e)}</div>;
-  }
-
-  // Album tables may not exist yet in production (pending migration)
-  let totalAlbums = 0, totalPurchases = 0, revenue: string | null = null;
-  let recentPurchases: PurchaseRow[] = [];
-  try {
-    const [albumsRes, purchasesRes, revenueRes, purchasesListRes] = await Promise.all([
-      sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM photo_albums WHERE status = 'published'`,
-      sql<CountRow[]>`SELECT COUNT(*)::int AS count FROM album_purchases`,
-      sql<RevenueRow[]>`SELECT SUM(amount_paid)::text AS total FROM album_purchases`,
-      sql<PurchaseRow[]>`SELECT id, user_id, album_id, amount_paid::text, purchased_at FROM album_purchases ORDER BY purchased_at DESC LIMIT 5`,
-    ]);
-    totalAlbums    = albumsRes[0]?.count ?? 0;
-    totalPurchases = purchasesRes[0]?.count ?? 0;
-    revenue        = revenueRes[0]?.total ?? null;
-    recentPurchases = purchasesListRes;
-  } catch {
-    // Tables don't exist yet — migration pending
   }
 
   const totalCommunities = communitiesRes[0]?.count ?? 0;
@@ -158,15 +131,6 @@ export default async function AdminPage() {
         </div>
       </Section>
 
-      {/* ÁLBUNS PREMIUM */}
-      <Section label="Álbuns Premium">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-          {card("Álbuns publicados", totalAlbums ?? 0)}
-          {card("Compras", totalPurchases ?? 0)}
-          {card("Receita total", fmtBRL(revenue ?? null))}
-        </div>
-      </Section>
-
       {/* LINKS RÁPIDOS */}
       <Section label="Links Rápidos">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
@@ -204,32 +168,6 @@ export default async function AdminPage() {
         </table>
       </Section>
 
-      {/* ÚLTIMAS COMPRAS */}
-      <Section label="Últimas Compras de Álbum">
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-          <thead>
-            <tr style={{ color: "#6B8BAF" }}>
-              <Th>User ID</Th>
-              <Th>Álbum ID</Th>
-              <Th>Valor</Th>
-              <Th>Data</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {recentPurchases.length === 0 && (
-              <tr><td colSpan={4} style={{ color: "#6B8BAF", padding: "12px 0" }}>Nenhuma compra ainda.</td></tr>
-            )}
-            {recentPurchases.map((p: PurchaseRow) => (
-              <tr key={p.id} style={{ borderTop: "1px solid #1a2e4a" }}>
-                <Td style={{ color: "#6B8BAF", fontFamily: "monospace", fontSize: 11 }}>{p.user_id.slice(0, 16)}…</Td>
-                <Td style={{ color: "#6B8BAF", fontFamily: "monospace", fontSize: 11 }}>{p.album_id.slice(0, 16)}…</Td>
-                <Td style={{ color: "#22C98A" }}>{fmtBRL(p.amount_paid)}</Td>
-                <Td>{fmt(p.purchased_at)}</Td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Section>
     </div>
   );
 }

@@ -21,7 +21,6 @@ export interface MessageWithAuthor {
   content: string;
   isEdited: boolean;
   isKlipped: boolean;
-  isDecision: boolean;
   attachments: Attachment[];
   createdAt: Date;
   updatedAt: Date;
@@ -57,7 +56,6 @@ interface ClientToServerEvents {
     replyToId?: string;
     replyToAuthorName?: string;
     replyToContent?: string;
-    isDecision?: boolean;
   }) => void;
   "typing:start": (topicId: string) => void;
   "typing:stop": (topicId: string) => void;
@@ -71,8 +69,6 @@ interface ServerToClientEvents {
   "topic:stats": (stats: { messageCount: number }) => void;
   "voice:started": (payload: { sessionId: string; hostName: string; hostClerkId: string }) => void;
   "voice:ended": (payload: { sessionId: string }) => void;
-  "album:published": (payload: { albumId: string; topicId: string | null | undefined; album: Record<string, unknown> }) => void;
-  "album:purchased": (payload: { albumId: string; photos: Record<string, unknown>[] }) => void;
   error: (err: { code: string; message: string }) => void;
 }
 
@@ -88,8 +84,6 @@ interface UseTopicSocketProps {
   onSummaryUpdated: (summary: TopicSummary) => void;
   onVoiceStarted?: (payload: { sessionId: string; hostName: string; hostClerkId: string }) => void;
   onVoiceEnded?: (payload: { sessionId: string }) => void;
-  onAlbumPublished?: (payload: { albumId: string; topicId: string | null | undefined; album: Record<string, unknown> }) => void;
-  onAlbumPurchased?: (payload: { albumId: string; photos: Record<string, unknown>[] }) => void;
 }
 
 // ─── useTopicSocket ───────────────────────────────────────────────────────────
@@ -103,8 +97,6 @@ export function useTopicSocket({
   onSummaryUpdated,
   onVoiceStarted,
   onVoiceEnded,
-  onAlbumPublished,
-  onAlbumPurchased,
 }: UseTopicSocketProps) {
   const socketRef = useRef<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -116,8 +108,6 @@ export function useTopicSocket({
   const onSummaryUpdatedRef = useRef(onSummaryUpdated);
   const onVoiceStartedRef = useRef(onVoiceStarted);
   const onVoiceEndedRef = useRef(onVoiceEnded);
-  const onAlbumPublishedRef = useRef(onAlbumPublished);
-  const onAlbumPurchasedRef = useRef(onAlbumPurchased);
 
   useEffect(() => { onMessageNewRef.current = onMessageNew; }, [onMessageNew]);
   useEffect(() => { onMessageDeletedRef.current = onMessageDeleted; }, [onMessageDeleted]);
@@ -125,8 +115,6 @@ export function useTopicSocket({
   useEffect(() => { onSummaryUpdatedRef.current = onSummaryUpdated; }, [onSummaryUpdated]);
   useEffect(() => { onVoiceStartedRef.current = onVoiceStarted; }, [onVoiceStarted]);
   useEffect(() => { onVoiceEndedRef.current = onVoiceEnded; }, [onVoiceEnded]);
-  useEffect(() => { onAlbumPublishedRef.current = onAlbumPublished; }, [onAlbumPublished]);
-  useEffect(() => { onAlbumPurchasedRef.current = onAlbumPurchased; }, [onAlbumPurchased]);
 
   useEffect(() => {
     let socket: Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -171,8 +159,6 @@ export function useTopicSocket({
       });
       socket.on("voice:started", (payload) => onVoiceStartedRef.current?.(payload));
       socket.on("voice:ended", (payload) => onVoiceEndedRef.current?.(payload));
-      socket.on("album:published", (payload) => onAlbumPublishedRef.current?.(payload));
-      socket.on("album:purchased", (payload) => onAlbumPurchasedRef.current?.(payload));
 
       socketRef.current = socket;
     }
@@ -194,8 +180,7 @@ export function useTopicSocket({
     (
       content: string,
       attachments?: Attachment[],
-      replyTo?: { replyToId: string; replyToAuthorName: string; replyToContent: string },
-      isDecision?: boolean
+      replyTo?: { replyToId: string; replyToAuthorName: string; replyToContent: string }
     ): string => {
       const tempId = `optimistic-${Date.now()}-${Math.random()}`;
       socketRef.current?.emit("message:send", {
@@ -204,7 +189,6 @@ export function useTopicSocket({
         tempId,
         ...(attachments && attachments.length > 0 ? { attachments } : {}),
         ...(replyTo ?? {}),
-        ...(isDecision ? { isDecision: true } : {}),
       });
       return tempId;
     },

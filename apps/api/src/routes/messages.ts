@@ -10,7 +10,6 @@ import { z } from "zod";
 const sendMessageSchema = z.object({
   topicId: z.string().uuid(),
   content: z.string().min(1).max(4000),
-  isDecision: z.boolean().optional(),
 });
 
 /**
@@ -196,7 +195,7 @@ export async function messagesRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: parsed.error.flatten() });
     }
 
-    const { topicId, content, isDecision } = parsed.data;
+    const { topicId, content } = parsed.data;
 
     const [topic] = await db
       .select()
@@ -227,7 +226,7 @@ export async function messagesRoutes(fastify: FastifyInstance) {
     const message = await db.transaction(async (tx) => {
       const [msg] = await tx
         .insert(messages)
-        .values({ topicId, authorId: req.userId, content, isDecision: isDecision === true })
+        .values({ topicId, authorId: req.userId, content })
         .returning();
 
       if (!msg) throw new Error("insert returned no rows");

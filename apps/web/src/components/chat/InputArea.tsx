@@ -20,8 +20,6 @@ export interface InputAreaProps {
   topicTitle: string;
   communityId?: string;
   onSendMessage: (content: string, attachments: Attachment[], replyTo?: ReplyTarget) => Promise<void>;
-  onMarkDecision: () => void;
-  decisionMode?: boolean;
   onRequestSummary: () => void;
   onKlipCommand?: (payload: { command: string; isPrivate: boolean }) => Promise<void>;
   onTyping?: () => void;
@@ -30,7 +28,6 @@ export interface InputAreaProps {
   replyTo?: ReplyTarget | null;
   onCancelReply?: () => void;
   isAdmin?: boolean;
-  onCreateAlbum?: () => void;
 }
 
 /** Pending attachment — has a local preview URL before/instead of the final URL */
@@ -192,8 +189,6 @@ export function InputArea({
   topicTitle,
   communityId,
   onSendMessage,
-  onMarkDecision,
-  decisionMode = false,
   onRequestSummary,
   onKlipCommand,
   onTyping,
@@ -202,7 +197,6 @@ export function InputArea({
   replyTo,
   onCancelReply,
   isAdmin = false,
-  onCreateAlbum,
 }: InputAreaProps) {
   const [content, setContent] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -551,36 +545,6 @@ export function InputArea({
         </div>
       )}
 
-      {/* ── Decision mode banner ─────────────────────────────────────── */}
-      {decisionMode && (
-        <div
-          className="flex items-center gap-[6px] px-[10px] py-[4px] rounded-[8px] text-[11px] font-semibold"
-          style={{
-            color: "#F5A94A",
-            background: "rgba(245,169,74,.08)",
-            border: "1px solid rgba(245,169,74,.22)",
-            marginBottom: 2,
-          }}
-        >
-          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-            <path d="M3 3C3 2.45 3.45 2 4 2H10L13 5V14C13 14.55 12.55 15 12 15H4C3.45 15 3 14.55 3 14V3Z" />
-            <path d="M10 2V5H13" />
-            <path d="M5.5 8.5H10.5" />
-            <path d="M5.5 11H10.5" />
-          </svg>
-          <span className="flex-1">Modo decisão ativo — a próxima mensagem será marcada como decisão</span>
-          <button
-            type="button"
-            onClick={onMarkDecision}
-            aria-label="Cancelar modo decisão"
-            className="shrink-0 hover:opacity-60 transition-opacity"
-            style={{ fontSize: 14, lineHeight: 1, color: "#F5A94A" }}
-          >
-            ×
-          </button>
-        </div>
-      )}
-
       {/* ── Context pill ─────────────────────────────────────────────── */}
       <div className="flex items-center gap-[6px]">
         {replyTo ? (
@@ -738,36 +702,6 @@ export function InputArea({
           {recording ? formatTimer(recordingSeconds) : "Áudio"}
         </button>
 
-        {/* Decisão */}
-        <button
-          type="button"
-          onClick={onMarkDecision}
-          disabled={disabled}
-          aria-label={decisionMode ? "Cancelar modo decisão" : "Marcar próxima mensagem como decisão"}
-          style={{
-            ...actionBtn(),
-            ...(decisionMode ? {
-              color: "#F5A94A",
-              background: "rgba(245,169,74,.10)",
-              fontWeight: 600,
-            } : {}),
-          }}
-          onMouseEnter={e => {
-            if (!decisionMode) applyHover(e, false);
-          }}
-          onMouseLeave={e => {
-            if (!decisionMode) removeHover(e);
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ flexShrink: 0 }} aria-hidden="true">
-            <path d="M3 3C3 2.45 3.45 2 4 2H10L13 5V14C13 14.55 12.55 15 12 15H4C3.45 15 3 14.55 3 14V3Z" />
-            <path d="M10 2V5H13" strokeLinecap="round" />
-            <path d="M5.5 8.5H10.5" strokeLinecap="round" />
-            <path d="M5.5 11H10.5" strokeLinecap="round" />
-          </svg>
-          Decisão
-        </button>
-
         {/* Enquete — só admin · Fase 2 conforme PRD v2.2 §5.2.5 (Votação: 2-5 opções, prazo, quórum) */}
         {isAdmin && (
           <button
@@ -786,26 +720,6 @@ export function InputArea({
               <rect x="11" y="3" width="3" height="11" rx="0.5" />
             </svg>
             Enquete
-          </button>
-        )}
-
-        {/* Álbum — só admin */}
-        {isAdmin && onCreateAlbum && (
-          <button
-            type="button"
-            onClick={onCreateAlbum}
-            disabled={disabled}
-            aria-label="Criar álbum de fotos"
-            style={actionBtn()}
-            onMouseEnter={e => applyHover(e, false)}
-            onMouseLeave={e => removeHover(e)}
-          >
-            <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ flexShrink: 0 }} aria-hidden="true">
-              <rect x="1.5" y="1.5" width="13" height="13" rx="2" />
-              <circle cx="5.5" cy="5.5" r="1.2" fill="currentColor" stroke="none" />
-              <path d="M1.5 10.5L5.5 7L9 10L11 8.5L14.5 11" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Álbum
           </button>
         )}
 

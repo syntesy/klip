@@ -5,8 +5,6 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import type { TopicSummary } from "@/hooks/useTopicSocket";
-import { AlbumSidebarTab } from "@/components/albums/AlbumSidebarTab";
-import type { AlbumCardData } from "@/components/albums/AlbumCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,15 +39,9 @@ export interface TopicListProps {
     topicCount: number;
     klipCount: number;
   };
-  albums?: AlbumCardData[];
-  isOwnerOrMod?: boolean;
-  onOpenAlbum?: (albumId: string) => void;
-  onPurchaseAlbum?: (albumId: string) => void;
-  onCreateAlbum?: () => void;
-  purchasingAlbumId?: string | null;
 }
 
-type Tab = "Tópicos" | "Decisões" | "Membros" | "Álbuns";
+type Tab = "Tópicos" | "Decisões" | "Membros";
 
 // ─── Status dot colors ────────────────────────────────────────────────────────
 
@@ -253,12 +245,6 @@ export function TopicList({
   members = [],
   topicSummary,
   stats,
-  albums = [],
-  isOwnerOrMod = false,
-  onOpenAlbum,
-  onPurchaseAlbum,
-  onCreateAlbum,
-  purchasingAlbumId,
 }: TopicListProps) {
   const [activeTab, setActiveTab] = useState<Tab>("Tópicos");
   const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -290,7 +276,7 @@ export function TopicList({
     >
       {/* Tabs */}
       <div className="flex border-b border-border bg-bg-surface px-[2px] shrink-0">
-        {(["Tópicos", "Decisões", "Membros", "Álbuns"] as const).map((tab) => (
+        {(["Tópicos", "Decisões", "Membros"] as const).map((tab) => (
           <button
             key={tab}
             type="button"
@@ -304,18 +290,6 @@ export function TopicList({
             style={activeTab === tab ? { color: "var(--color-green)", borderBottomColor: "var(--color-green)" } : undefined}
           >
             {tab}
-            {tab === "Álbuns" && albums.length > 0 && (
-              <span
-                className="ml-[4px] inline-flex items-center justify-center rounded-full text-[9px] font-bold"
-                style={{
-                  background: activeTab === "Álbuns" ? "#22C98A" : "rgba(255,255,255,.15)",
-                  color: activeTab === "Álbuns" ? "#fff" : "var(--color-text-3)",
-                  minWidth: 14, height: 14, padding: "0 4px",
-                }}
-              >
-                {albums.length}
-              </span>
-            )}
           </button>
         ))}
       </div>
@@ -403,17 +377,7 @@ export function TopicList({
           </>
         )}
 
-        {/* ── Tab: Álbuns ── */}
-        {activeTab === "Álbuns" && (
-          <AlbumSidebarTab
-            albums={albums}
-            isOwnerOrMod={isOwnerOrMod}
-            onOpenAlbum={onOpenAlbum ?? (() => {})}
-            onPurchase={onPurchaseAlbum ?? (() => {})}
-            onCreateAlbum={onCreateAlbum ?? (() => {})}
-            purchasingId={purchasingAlbumId ?? null}
-          />
-        )}
+
       </div>
     </aside>
   );

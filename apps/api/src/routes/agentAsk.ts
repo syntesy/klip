@@ -135,7 +135,6 @@ export async function agentAskRoutes(fastify: FastifyInstance) {
           content: msg.content,
           isEdited: false,
           isKlipped: false,
-          isDecision: false,
           attachments: [],
           createdAt: msg.createdAt,
           updatedAt: msg.updatedAt,

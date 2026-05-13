@@ -14,7 +14,7 @@ import type {
   SocketData,
 } from "./socket/index.js";
 import { db } from "./lib/db.js";
-import { sql } from "drizzle-orm";
+import { messages } from "@klip/db/schema";
 import { communitiesRoutes } from "./routes/communities.js";
 import { topicsRoutes } from "./routes/topics.js";
 import { messagesRoutes } from "./routes/messages.js";
@@ -26,7 +26,6 @@ import { voiceRoutes } from "./routes/voice.js";
 import { premiumRoutes } from "./routes/premium.js";
 import { savedMessagesRoutes } from "./routes/savedMessages.js";
 import { agentAskRoutes } from "./routes/agentAsk.js";
-import { albumRoutes } from "./routes/albums.js";
 import multipart from "@fastify/multipart";
 import { registerSocketHandlers } from "./socket/index.js";
 
@@ -99,13 +98,11 @@ await fastify.register(voiceRoutes, { prefix: "/api" });
 await fastify.register(premiumRoutes, { prefix: "/api/premium" });
 await fastify.register(savedMessagesRoutes, { prefix: "/api" });
 await fastify.register(agentAskRoutes, { prefix: "/api/topics" });
-await fastify.register(albumRoutes, { prefix: "/api" });
 
-// Health check — verifies database connectivity and schema integrity
+// Health check — verifies database connectivity
 fastify.get("/health", async () => {
   try {
-    // Quick query touching a column from a recent migration to validate schema is current
-    const [row] = await db.execute(sql`SELECT COUNT(*) AS c FROM messages WHERE is_decision = false LIMIT 1`);
+    await db.select({ id: messages.id }).from(messages).limit(1);
     return { status: "ok", db: "connected", timestamp: new Date().toISOString() };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

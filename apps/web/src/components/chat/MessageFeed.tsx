@@ -34,7 +34,6 @@ export interface Message {
   content: string;
   isEdited: boolean;
   isKlipped?: boolean;
-  isDecision?: boolean;
   attachments?: Attachment[];
   reactions?: Reaction[];
   createdAt: Date;
@@ -672,27 +671,18 @@ function MessageRow({
     );
   }
 
-  const isDecision = msg.isDecision === true;
-
   return (
     <div
       id={`msg-${msg.id}`}
       className={cn(
         "group relative flex gap-[11px]",
-        !isDecision && "hover:bg-bg-subtle",
+        "hover:bg-bg-subtle",
         isOwn && "flex-row",
         isHighlighted && "ring-2 ring-inset ring-blue"
       )}
       style={{
-        background: isHighlighted
-          ? "rgba(74,158,255,.08)"
-          : isDecision
-            ? "rgba(245,169,74,.06)"
-            : "var(--color-bg-surface)",
-        border: isDecision
-          ? "1px solid rgba(245,169,74,.25)"
-          : "1px solid var(--color-border)",
-        borderLeft: isDecision ? "3px solid #F5A94A" : undefined,
+        background: isHighlighted ? "rgba(74,158,255,.08)" : "var(--color-bg-surface)",
+        border: "1px solid var(--color-border)",
         borderRadius: 14,
         margin: "3px 12px",
         padding: "10px 12px",
@@ -743,33 +733,6 @@ function MessageRow({
           </div>
         )}
 
-        {isDecision && (
-          <span
-            className="klip-badge"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-              marginTop: 6,
-              padding: "2px 8px",
-              borderRadius: 6,
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: "0.04em",
-              background: "rgba(245,169,74,.12)",
-              border: "1px solid rgba(245,169,74,.30)",
-              color: "#F5A94A",
-            }}
-          >
-            <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-              <path d="M3 3C3 2.45 3.45 2 4 2H10L13 5V14C13 14.55 12.55 15 12 15H4C3.45 15 3 14.55 3 14V3Z" />
-              <path d="M10 2V5H13" />
-              <path d="M5.5 8.5H10.5" />
-              <path d="M5.5 11H10.5" />
-            </svg>
-            DECISÃO
-          </span>
-        )}
         {msg.isKlipped && <KlippedBadge />}
 
         <ReactionBubbles
