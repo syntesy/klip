@@ -8,7 +8,7 @@
     "./schema": "./src/schema/index.ts"
   },
   "scripts": {
-    "db:generate": "drizzle-kit generate",
+    "db:generate": "echo '⚠️  AVISO: snapshot drift pendente — leia MIGRATIONS-DRIFT.md' && drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "studio": "drizzle-kit studio",
     "typecheck": "tsc --noEmit"
