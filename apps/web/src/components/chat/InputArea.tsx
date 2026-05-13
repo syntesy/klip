@@ -768,16 +768,17 @@ export function InputArea({
           Decisão
         </button>
 
-        {/* Enquete — só admin */}
+        {/* Enquete — só admin · Fase 2 conforme PRD v2.2 §5.2.5 (Votação: 2-5 opções, prazo, quórum) */}
         {isAdmin && (
           <button
             type="button"
-            onClick={() => {/* TODO fase 4 */}}
-            disabled={disabled}
-            aria-label="Criar enquete"
-            style={actionBtn()}
-            onMouseEnter={e => applyHover(e, false)}
-            onMouseLeave={e => removeHover(e)}
+            onClick={() => {
+              // TODO: Fase 2 — implementar modal de criação de Votação (PRD v2.2 §5.2.5)
+            }}
+            disabled
+            aria-label="Criar enquete (em breve)"
+            title="Em breve — Fase 2"
+            style={{ ...actionBtn(), opacity: 0.4, cursor: "not-allowed" }}
           >
             <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" style={{ flexShrink: 0 }} aria-hidden="true">
               <rect x="2" y="11" width="3" height="3" rx="0.5" />
