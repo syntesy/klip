@@ -17,7 +17,7 @@ const klipCommandSchema = z.object({
   isPrivate: z.boolean(),
 });
 
-export async function klipAiRoutes(fastify: FastifyInstance) {
+export async function agentAskRoutes(fastify: FastifyInstance) {
   fastify.post<{ Params: { topicId: string } }>(
     "/:topicId/klip-command",
     { preHandler: requireAuth },
