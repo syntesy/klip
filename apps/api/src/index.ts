@@ -24,6 +24,8 @@ import { invitesRoutes } from "./routes/invites.js";
 import { uploadsRoutes } from "./routes/uploads.js";
 import { voiceRoutes } from "./routes/voice.js";
 import { premiumRoutes } from "./routes/premium.js";
+import { stripeConnectRoutes } from "./routes/stripe-connect.js";
+import { stripeWebhookRoutes } from "./routes/stripe-webhooks.js";
 import { savedMessagesRoutes } from "./routes/savedMessages.js";
 import { klipAiRoutes } from "./routes/klipAi.js";
 import { albumRoutes } from "./routes/albums.js";
@@ -48,6 +50,29 @@ const fastify = Fastify({
 await fastify.register(multipart, {
   limits: { fileSize: 26 * 1024 * 1024 }, // 26 MB hard ceiling
 });
+
+// ── Raw body parser ────────────────────────────────────────────────────────────
+// Stripe webhooks require the raw request body (bytes) to verify the signature.
+// Fastify's default JSON parser consumes the stream, so we replace it with a
+// parser that preserves the raw buffer on req.rawBody while still delivering
+// parsed JSON to handlers that expect it.
+fastify.addContentTypeParser(
+  "application/json",
+  { parseAs: "buffer" },
+  (req, body, done) => {
+    const buf = body as Buffer;
+    (req as unknown as { rawBody: Buffer }).rawBody = buf;
+    if (buf.length === 0) {
+      done(null, {});
+      return;
+    }
+    try {
+      done(null, JSON.parse(buf.toString("utf8")));
+    } catch (err) {
+      done(err as Error, undefined);
+    }
+  }
+);
 
 await fastify.register(cors, {
   origin: WEB_ORIGINS,
@@ -97,6 +122,8 @@ await fastify.register(invitesRoutes, { prefix: "/api/invites" });
 await fastify.register(uploadsRoutes, { prefix: "/api/uploads" });
 await fastify.register(voiceRoutes, { prefix: "/api" });
 await fastify.register(premiumRoutes, { prefix: "/api/premium" });
+await fastify.register(stripeConnectRoutes, { prefix: "/api/stripe-connect" });
+await fastify.register(stripeWebhookRoutes, { prefix: "/api/webhooks" });
 await fastify.register(savedMessagesRoutes, { prefix: "/api" });
 await fastify.register(klipAiRoutes, { prefix: "/api/topics" });
 await fastify.register(albumRoutes, { prefix: "/api" });

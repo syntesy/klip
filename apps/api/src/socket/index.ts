@@ -70,6 +70,7 @@ export interface ServerToClientEvents {
   "voice:speak-granted": (payload: { sessionId: string }) => void;
   "notification:new": (payload: { notification: Record<string, unknown> }) => void;
   "premium:new": (payload: { title: string; price: number; communityId: string; premiumKlipId: string }) => void;
+  "premium:purchased": (payload: { premiumKlipId: string }) => void;
   "album:published": (payload: { albumId: string; topicId: string | null | undefined; album: Record<string, unknown> }) => void;
   "album:purchased": (payload: { albumId: string; photos: Record<string, unknown>[] }) => void;
 }

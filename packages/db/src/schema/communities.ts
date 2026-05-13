@@ -11,11 +11,17 @@ import {
 import { relations } from "drizzle-orm";
 import { topics } from "./topics";
 
-// ─── Enum ───────────────────────────────────────────────────────────────────
+// ─── Enums ──────────────────────────────────────────────────────────────────
 export const memberRoleEnum = pgEnum("member_role", [
   "owner",
   "moderator",
   "member",
+]);
+
+export const communityPlanEnum = pgEnum("community_plan", [
+  "starter",
+  "pro",
+  "business",
 ]);
 
 // ─── Communities ────────────────────────────────────────────────────────────
@@ -36,6 +42,10 @@ export const communities = pgTable(
       .defaultNow(),
     /** Soft delete — preserva dados de membros, tópicos e mensagens */
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    /** Plano do criador — determina comissão Klip (8% / 5% / 2%) */
+    plan: communityPlanEnum("plan").notNull().default("starter"),
+    /** Stripe Connect account ID do criador — null até completar onboarding */
+    stripeAccountId: varchar("stripe_account_id", { length: 255 }),
   },
   (t) => [
     uniqueIndex("communities_slug_unique").on(t.slug),
