@@ -87,13 +87,16 @@ export default async function CommunityPage({ params }: Props) {
   const token = await getToken();
   if (!token) notFound();
 
-  const [community, topics, members] = await Promise.all([
+  const [community, topics, members, membership] = await Promise.all([
     apiFetch(`/api/communities/${communityId}`, token) as Promise<Community | null>,
     apiFetch(`/api/topics?communityId=${communityId}`, token) as Promise<Topic[] | null>,
     apiFetch(`/api/communities/${communityId}/members`, token) as Promise<{ userId: string }[] | null>,
+    apiFetch(`/api/communities/${communityId}/me`, token) as Promise<{ role: "owner" | "moderator" | "member" } | null>,
   ]);
 
   if (!community) notFound();
+
+  const userRole = membership?.role;
 
   const topicList = topics ?? [];
   const memberList = members ?? [];
@@ -142,7 +145,11 @@ export default async function CommunityPage({ params }: Props) {
           </div>
 
           {/* Ações: alinhadas à direita */}
-          <CommunityActions communityId={communityId} communityName={community.name} />
+          <CommunityActions
+            communityId={communityId}
+            communityName={community.name}
+            {...(userRole ? { userRole } : {})}
+          />
         </div>
       </div>
 
