@@ -3,8 +3,8 @@ import {
   uuid,
   varchar,
   text,
-  timestamp,
   boolean,
+  timestamp,
   jsonb,
   index,
 } from "drizzle-orm/pg-core";
@@ -44,8 +44,6 @@ export const messages = pgTable(
       .defaultNow(),
     /** Soft delete — preserva contexto de threads mesmo após remoção */
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
-    /** Marcado como decisão do grupo */
-    isDecision: boolean("is_decision").notNull().default(false),
     /** Reply threading */
     replyToId: uuid("reply_to_id").references((): any => messages.id, { onDelete: "set null" }),
     replyToAuthorName: varchar("reply_to_author_name", { length: 255 }),
